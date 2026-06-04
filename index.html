@@ -1,12 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Ghi Số Bán Giao Hàng (V6.1)</title>
-    <!-- Tailwind CSS -->
+    <title>Sổ Ghi Số Bán Giao Hàng (V6.2)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         input, button, .clickable { touch-action: manipulation; }
@@ -15,20 +14,17 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Tuỳ chỉnh thanh cuộn */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
-
-    <!-- Header ứng dụng -->
     <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-sm sticky top-0 z-10">
         <div class="max-w-md mx-auto px-3 py-2 flex justify-between items-center">
             <div class="flex items-center space-x-2">
                 <h1 class="text-xs font-bold tracking-wide flex items-center gap-1">
-                    <i class="fa-solid fa-clipboard-list text-sm"></i> Sổ Giao Hàng v6.1
+                    <i class="fa-solid fa-clipboard-list text-sm"></i> Sổ Giao Hàng v6.2
                 </h1>
                 <span class="text-slate-400 text-[10px] select-none">|</span>
                 <div class="flex items-center space-x-1">
@@ -36,16 +32,32 @@
                     <span id="cloudStatusText" class="text-[9px] text-blue-100 font-normal">Đã kết nối</span>
                 </div>
             </div>
-            
-            <button id="btnReset" class="bg-red-500 hover:bg-red-600 active:scale-95 text-white px-2 py-1 rounded text-[10px] font-medium transition flex items-center space-x-1">
-                <i class="fa-solid fa-rotate-left"></i><span>Xóa hết</span>
-            </button>
+            <div class="flex items-center space-x-1">
+                <!-- Nút Cài đặt API AI -->
+                <button id="btnOpenApiModal" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white p-1 rounded text-[11px] font-medium transition flex items-center justify-center w-6 h-6" title="Cài đặt khóa AI">
+                    <i class="fa-solid fa-gear text-xs"></i>
+                </button>
+                <!-- Nút Debug Nhật ký -->
+                <button id="btnDebugConsole" class="bg-slate-800/60 hover:bg-slate-800 active:scale-95 text-white p-1 rounded text-[11px] transition flex items-center justify-center w-6 h-6" title="Nhật ký lỗi">
+                    <i class="fa-solid fa-terminal text-xs"></i>
+                </button>
+                <button id="btnReset" class="bg-red-500 hover:bg-red-600 active:scale-95 text-white px-2 py-1 rounded text-[10px] font-medium transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-left text-[9px]"></i><span>Xóa hết</span>
+                </button>
+            </div>
         </div>
     </header>
-
     <main class="max-w-md mx-auto px-2.5 mt-3 space-y-3">
+        <!-- Banner cảnh báo nếu chưa cấu hình AI -->
+        <div id="aiWarningBanner" class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs flex items-start gap-2.5 shadow-sm">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm shrink-0 mt-0.5"></i>
+            <div>
+                <p class="font-bold">Chưa cấu hình khóa AI!</p>
+                <p class="text-[11px] text-amber-700/90 mt-0.5">Tính năng Trộn Misa & Khớp Excel sẽ tạm khóa cho đến khi bạn cài đặt khóa kết nối AI.</p>
+                <button onclick="document.getElementById('apiModal').classList.remove('hidden')" class="mt-1.5 font-bold text-indigo-700 underline text-[11px]">Cài đặt khóa ngay &raquo;</button>
+            </div>
+        </div>
 
-        <!-- DỰ PHÒNG -->
         <div class="bg-white rounded-lg p-2 shadow-sm border border-slate-100 flex items-center justify-between">
             <div class="flex items-center space-x-1.5 text-[10px] font-bold text-slate-500 select-none">
                 <i class="fa-solid fa-shield-halved text-emerald-500 text-sm"></i><span>DỰ PHÒNG</span>
@@ -59,13 +71,8 @@
                 </button>
             </div>
         </div>
-
-        <!-- TIẾN ĐỘ MỤC TIÊU DOANH SỐ VÀ THỜI GIAN -->
         <div class="bg-white rounded-xl p-3.5 pl-4 shadow-sm border border-slate-200 flex flex-col space-y-3 relative overflow-hidden">
-            
             <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-red-500 to-blue-500"></div>
-
-            <!-- 1. DOANH SỐ -->
             <div>
                 <div class="flex justify-between items-end mb-1">
                     <div>
@@ -82,26 +89,19 @@
                         <span id="progressPercentage" class="text-lg font-black text-red-600 leading-none mt-0.5">0%</span>
                     </div>
                 </div>
-                
                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                     <div id="progressBarFill" class="bg-gradient-to-r from-red-400 to-red-600 h-full rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
                 </div>
-                
                 <div class="flex justify-between text-[10px] text-slate-500 mt-1.5">
                     <span>Đã đạt: <span id="targetAchievedAmount" class="font-bold text-slate-700">0đ</span></span>
                     <span><span id="targetRemainingText">Còn thiếu:</span> <span id="targetRemainingAmount" class="font-bold text-amber-500">0đ</span></span>
                 </div>
-
-                <!-- TIẾN ĐỘ CHUẨN ĐẾN HÔM NAY -->
                 <div class="mt-2.5 p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center">
                     <span class="text-[10px] text-slate-500">Cần đạt tới hôm nay: <span id="expectedAmount" class="font-black text-slate-800 text-[13px] ml-0.5">0đ</span></span>
                     <span id="runRateStatus" class="font-bold px-2 py-1 rounded text-[10px]">...</span>
                 </div>
             </div>
-
             <div class="border-t border-slate-100"></div>
-
-            <!-- 2. THỜI GIAN -->
             <div>
                 <div class="flex justify-between items-end mb-1">
                     <div>
@@ -115,25 +115,19 @@
                         <span id="timeProgressPercentage" class="text-lg font-black text-blue-600 leading-none mt-0.5">0%</span>
                     </div>
                 </div>
-                
                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                     <div id="timeProgressBarFill" class="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
                 </div>
-                
                 <div class="flex justify-between text-[10px] text-slate-500 mt-1.5">
                     <span>Đã qua: <span id="timeDaysPassedFooter" class="font-bold text-slate-700">0 ngày</span></span>
                     <span>Còn lại: <span id="timeDaysRemainingFooter" class="font-bold text-blue-500">0 ngày</span></span>
                 </div>
             </div>
-            
         </div>
-
-        <!-- BẢNG ĐỒNG HỒ THỐNG KÊ CHI TIẾT -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-24 h-24 bg-green-50 rounded-full -z-0"></div>
             <span id="dashboardTitle" class="text-[9px] font-bold uppercase tracking-wider text-slate-400 z-10 text-center">TỔNG TIỀN ĐÃ GIAO (TẤT CẢ)</span>
             <span id="totalRevenue" class="text-2xl font-black text-green-600 z-10">0đ</span>
-            
             <div class="grid grid-cols-3 gap-1 text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 w-full z-10">
                 <div class="text-center">
                     <p class="font-bold text-slate-700 text-sm" id="statCompletedCount">0/0</p>
@@ -149,8 +143,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- KHU VỰC NHẬP ĐƠN HÀNG MỚI -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <button id="btnToggleAddForm" class="w-full px-4 py-3.5 flex justify-between items-center bg-slate-50 hover:bg-slate-100 active:bg-slate-200 transition-all">
                 <h2 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -158,7 +150,6 @@
                 </h2>
                 <i id="addFormChevron" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200"></i>
             </button>
-
             <div id="addFormContent" class="hidden border-t border-slate-100 fade-enter">
                 <div class="flex border-b border-slate-100 text-[10px] bg-slate-50/30">
                     <button id="tabSingle" class="flex-1 py-3 text-center font-bold text-blue-600 border-b-2 border-blue-600">
@@ -171,8 +162,6 @@
                         <i class="fa-solid fa-file-excel mr-1 text-emerald-600"></i> Khớp Excel
                     </button>
                 </div>
-
-                <!-- Tab Nhập Lẻ -->
                 <div id="panelSingle" class="p-4 space-y-3">
                     <div class="grid grid-cols-12 gap-3">
                         <div class="col-span-7">
@@ -188,8 +177,6 @@
                         <i class="fa-solid fa-plus"></i><span>Thêm đơn hàng</span>
                     </button>
                 </div>
-
-                <!-- Tab Trộn Misa -->
                 <div id="panelBulk" class="p-4 space-y-4 hidden">
                     <div class="space-y-2">
                         <label class="block text-[10px] text-indigo-600 font-bold uppercase tracking-wide">Quét ảnh Misa bằng AI</label>
@@ -204,8 +191,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Tab Khớp Excel -->
                 <div id="panelReconcile" class="p-4 space-y-4 hidden">
                     <div class="space-y-2">
                         <label class="block text-[10px] text-emerald-600 font-bold uppercase tracking-wide">Quét bảng Excel đối chiếu</label>
@@ -222,10 +207,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- DANH SÁCH KHÁCH HÀNG -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            
             <div class="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <i class="fa-regular fa-calendar-days text-slate-400"></i>
@@ -236,7 +218,6 @@
                     <i class="fa-solid fa-xmark mr-1"></i>Bỏ lọc
                 </button>
             </div>
-
             <div class="flex border-b border-slate-100 text-[11px] bg-slate-50/50">
                 <button id="filterTabAll" class="filter-tab-btn flex-1 py-3.5 text-center font-bold text-blue-600 border-b-2 border-blue-500 transition-colors" data-filter="all">
                     Tất cả <span id="countTabAll" class="ml-1 bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
@@ -248,17 +229,55 @@
                     Đã giao <span id="countTabCompleted" class="ml-1 bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
                 </button>
             </div>
-
             <div id="emptyState" class="p-10 text-center text-slate-400 space-y-2">
                 <i class="fa-solid fa-receipt text-4xl text-slate-300"></i>
                 <p class="text-sm font-medium mt-2">Chưa có đơn hàng nào.</p>
             </div>
-
             <ul id="orderList" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></ul>
         </div>
     </main>
 
-    <!-- Dialogs -->
+    <!-- Modal Cài đặt API Key (Giúp giải quyết triệt để lỗi GitHub Pages) -->
+    <div id="apiModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <h3 class="font-bold text-lg text-center flex items-center justify-center gap-2 text-indigo-700">
+                <i class="fa-solid fa-key"></i> Cài Đặt Khóa AI
+            </h3>
+            <div class="text-xs text-slate-600 space-y-2">
+                <p>Nhập mã khóa API của bạn từ Google AI Studio để kích hoạt tính năng quét ảnh Trộn Misa và Khớp Excel.</p>
+                <p class="bg-slate-50 p-2 rounded text-[11px] text-slate-500 border border-slate-100">
+                    <span class="font-bold">Lưu ý:</span> Khóa này sẽ được lưu bảo mật 100% trong bộ nhớ điện thoại Samsung của bạn, không bao giờ gửi đi nơi khác.
+                </p>
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase">Khóa API của bạn:</label>
+                <input type="text" id="apiInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Dán mã khóa AQ... hoặc AIza... vào đây">
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button id="btnCancelApi" class="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button>
+                <button id="btnSaveApi" class="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm active:scale-95 transition">Lưu Khóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hộp thoại debug cho điện thoại -->
+    <div id="debugConsoleModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 text-green-400 rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-2xl flex flex-col h-96">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-terminal"></i> Nhật ký hệ thống (Debug Console)
+                </h3>
+                <button id="btnClearConsole" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">Xóa nhật ký</button>
+            </div>
+            <div id="debugConsoleContent" class="flex-1 overflow-y-auto text-[10px] font-mono space-y-1.5 leading-normal pr-1 select-text">
+                <div class="text-slate-500">// Hệ thống đã khởi động...</div>
+            </div>
+            <button id="btnCloseConsole" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold text-xs active:scale-95 transition mt-2">
+                Đóng
+            </button>
+        </div>
+    </div>
+
     <div id="targetModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center flex items-center justify-center gap-2">
@@ -274,7 +293,6 @@
             </div>
         </div>
     </div>
-
     <div id="reconcilePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-slate-800 text-center flex items-center justify-center gap-2">
@@ -295,7 +313,6 @@
             </div>
         </div>
     </div>
-
     <div id="mergePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-slate-800 text-center flex items-center justify-center gap-2">
@@ -308,7 +325,6 @@
             </div>
         </div>
     </div>
-
     <div id="editModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center">Sửa Đơn Hàng</h3>
@@ -323,7 +339,6 @@
             </div>
         </div>
     </div>
-
     <div id="deleteItemModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
             <div class="text-center"><i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-2"></i><h3 class="font-bold text-lg">Xóa đơn này?</h3></div>
@@ -334,7 +349,6 @@
             </div>
         </div>
     </div>
-
     <div id="confirmModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center">Xóa toàn bộ?</h3>
@@ -345,7 +359,6 @@
             </div>
         </div>
     </div>
-
     <div id="importModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center"><i class="fa-solid fa-file-import text-blue-600 mr-2"></i>Khôi phục dữ liệu</h3>
@@ -356,8 +369,7 @@
             </div>
         </div>
     </div>
-
-    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3.5 rounded-full shadow-2xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2 w-[90%] text-center justify-center break-words"></div>
+    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3.5 rounded-full shadow-2xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -375,6 +387,63 @@
         let monthlyTarget = parseInt(localStorage.getItem('monthly_target')) || 185000000;
         let db = null, auth = null, appId = 'sales-tracker-app-v6-1', userId = null, useCloud = false;
 
+        // Nhật ký debug hỗ trợ người dùng điện thoại
+        const consoleEl = document.getElementById('debugConsoleContent');
+        function addLog(msg, type = "info") {
+            const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+            let color = "text-slate-300";
+            if (type === "error") color = "text-red-400 font-bold";
+            if (type === "success") color = "text-emerald-400 font-bold";
+            if (type === "warning") color = "text-amber-400";
+            
+            consoleEl.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // Bật tắt bảng console debug
+        document.getElementById('btnDebugConsole').addEventListener('click', () => {
+            document.getElementById('debugConsoleModal').classList.remove('hidden');
+        });
+        document.getElementById('btnClearConsole').addEventListener('click', () => {
+            consoleEl.innerHTML = `<div class="text-slate-500">// Đã xóa nhật ký.</div>`;
+        });
+        document.getElementById('btnCloseConsole').addEventListener('click', () => {
+            document.getElementById('debugConsoleModal').classList.add('hidden');
+        });
+
+        // ----------------- KHỞI TẠO KHÓA AI TỪ LOCALSTORAGE -----------------
+        let apiKey = localStorage.getItem('gemini_api_key_v2') || "";
+        
+        function updateApiStatus() {
+            const banner = document.getElementById('aiWarningBanner');
+            const apiInput = document.getElementById('apiInput');
+            apiInput.value = apiKey;
+            
+            if (apiKey) {
+                banner.classList.add('hidden');
+                addLog("Khóa AI hiện tại đang chạy: " + apiKey.substring(0, 8) + "...", "info");
+            } else {
+                banner.classList.remove('hidden');
+                addLog("Cảnh báo: Chưa cài đặt Khóa AI (Misa & Excel không khả dụng)", "warning");
+            }
+        }
+
+        // Đóng mở Cài đặt API
+        document.getElementById('btnOpenApiModal').addEventListener('click', () => {
+            document.getElementById('apiModal').classList.remove('hidden');
+        });
+        document.getElementById('btnCancelApi').addEventListener('click', () => {
+            document.getElementById('apiModal').classList.add('hidden');
+        });
+        document.getElementById('btnSaveApi').addEventListener('click', () => {
+            const val = document.getElementById('apiInput').value.trim();
+            apiKey = val;
+            localStorage.setItem('gemini_api_key_v2', apiKey);
+            document.getElementById('apiModal').classList.add('hidden');
+            updateApiStatus();
+            showToast("Đã lưu cài đặt khóa AI!");
+        });
+
         try {
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                 const firebaseConfig = JSON.parse(__firebase_config);
@@ -383,13 +452,13 @@
                 db = firebase.firestore();
                 appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-tracker-app-v6-1';
                 useCloud = true;
+                addLog("Firebase Cloud kết nối thành công.", "success");
             }
-        } catch (e) {}
+        } catch (e) {
+            addLog("Không kết nối Firebase: " + e.message, "warning");
+        }
 
         const getOrdersCol = () => { if (!db || !userId) return null; return db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('orders'); };
-        
-        // CHÚ Ý: KHI DÁN VÀO GITHUB, ĐIỀN API KEY CỦA BẠN VÀO GIỮA 2 DẤU NGOẶC KÉP Ở DÒNG DƯỚI ĐÂY
-        const apiKey = "AQ.Ab8RN6LedRthcWHXI-xjLTjN4T_qis-mKh-2WTiXXAML_OP4yw"; 
 
         const inputName = document.getElementById('inputName');
         const inputAmount = document.getElementById('inputAmount');
@@ -429,7 +498,9 @@
                 try {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await auth.signInWithCustomToken(__initial_auth_token);
                     else await auth.signInAnonymously();
-                } catch (e) {}
+                } catch (e) {
+                    addLog("Lỗi xác thực Firebase: " + e.message, "error");
+                }
             };
             initAuth();
             auth.onAuthStateChanged((user) => {
@@ -437,6 +508,7 @@
                     userId = user.uid;
                     document.getElementById('cloudStatusDot').className = "w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse";
                     document.getElementById('cloudStatusText').innerText = "Đã đồng bộ đám mây";
+                    addLog("Xác thực đồng bộ thành công.", "success");
                     const ordersCol = getOrdersCol();
                     if(ordersCol) {
                         ordersCol.onSnapshot((snapshot) => {
@@ -445,6 +517,8 @@
                             orders = cloudOrders;
                             localStorage.setItem('delivery_orders_v3', JSON.stringify(orders));
                             renderOrders();
+                        }, (err) => {
+                            addLog("Lỗi Firestore: " + err.message, "error");
                         });
                     }
                 }
@@ -494,7 +568,7 @@
         
         function showToast(msg, isError = false) {
             toastMessage.innerHTML = isError ? `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> ${msg}` : `<i class="fa-solid fa-check text-emerald-400"></i> ${msg}`;
-            toastMessage.style.opacity = 1; setTimeout(() => toastMessage.style.opacity = 0, 4000);
+            toastMessage.style.opacity = 1; setTimeout(() => toastMessage.style.opacity = 0, 2500);
         }
 
         function saveData() { localStorage.setItem('delivery_orders_v3', JSON.stringify(orders)); showToast("Đã lưu dữ liệu!"); renderOrders(); }
@@ -606,10 +680,20 @@
         reconcileInputFile.addEventListener('change', async (e) => {
             const file = e.target.files[0]; if(!file) return;
             btnReconcileUploadTrigger.classList.add('hidden'); document.getElementById('reconcileScanningIndicator').classList.remove('hidden');
+            addLog("Bắt đầu phân tích ảnh đối chiếu Excel...");
             try {
                 const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "excel");
-                if (res && res.deliveries) processExcel(res.deliveries); 
-            } catch(e) { /* Error is handled in callGemini */ }
+                if (res && res.deliveries) {
+                    addLog("Đọc ảnh Excel thành công. Đang tiến hành so khớp...", "success");
+                    processExcel(res.deliveries);
+                } else {
+                    addLog("Không thể trích xuất dữ liệu từ báo cáo.", "error");
+                    showToast("AI không đọc được bảng này", true);
+                }
+            } catch(e) { 
+                addLog("Lỗi quét đối chiếu: " + e.message, "error");
+                showToast("Vui lòng thử lại sau.", true); 
+            }
             finally { btnReconcileUploadTrigger.classList.remove('hidden'); document.getElementById('reconcileScanningIndicator').classList.add('hidden'); reconcileInputFile.value = ''; }
         });
 
@@ -679,10 +763,20 @@
         bulkInputFile.addEventListener('change', async (e) => {
             const file = e.target.files[0]; if(!file) return;
             document.getElementById('btnUploadTrigger').classList.add('hidden'); document.getElementById('aiScanningIndicator').classList.remove('hidden');
+            addLog("Bắt đầu gửi ảnh Misa lên AI...");
             try {
                 const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "crm");
-                if (res && res.orders) processMergePreview(res.orders); 
-            } catch(e) { /* Error is handled in callGemini */ }
+                if (res && res.orders) {
+                    addLog("AI phân tích hóa đơn Misa thành công. Hiện bảng trộn...", "success");
+                    processMergePreview(res.orders);
+                } else {
+                    addLog("Ảnh Misa lỗi hoặc AI từ chối đọc dữ liệu.", "error");
+                    showToast("AI không đọc được", true);
+                }
+            } catch(e) { 
+                addLog("Lỗi quét hóa đơn Misa: " + e.message, "error");
+                showToast("Lỗi phân tích", true); 
+            }
             finally { document.getElementById('btnUploadTrigger').classList.remove('hidden'); document.getElementById('aiScanningIndicator').classList.add('hidden'); bulkInputFile.value = ''; }
         });
 
@@ -735,8 +829,25 @@
         function fileToBase64(file) { return new Promise((res, rej) => { const r=new FileReader(); r.readAsDataURL(file); r.onload=()=>res(r.result); r.onerror=e=>rej(e); }); }
         
         async function callGemini(b64, mime, type) {
-            // CHÚ Ý: KHI DÁN VÀO GITHUB, ĐỔI CHỮ gemini-2.5-flash-preview-09-2025 THÀNH gemini-1.5-flash
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            if(!apiKey) {
+                addLog("Chưa cấu hình API Key. Hãy bấm vào bánh răng cài đặt trên thanh tiêu đề.", "error");
+                showToast("Bạn chưa cài đặt khóa AI!", true);
+                return null;
+            }
+
+            let url = "";
+            let headers = { "Content-Type": "application/json" };
+            
+            // Tự động phân tích và cấu hình kết nối thông minh
+            if (apiKey.startsWith("AQ")) {
+                url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+                headers["Authorization"] = `Bearer ${apiKey}`;
+                addLog("Gửi yêu cầu thông qua Token dịch vụ (Bearer Token)...", "info");
+            } else {
+                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                addLog("Gửi yêu cầu thông qua khóa API thông thường...", "info");
+            }
+
             let prompt = "", schema = {};
             if(type === 'excel') {
                 prompt = "Quét ảnh báo cáo Excel giao hàng lấy: name (tên khách hàng), address (địa chỉ nếu có), amount (số tiền/doanh số), salesperson (tên nhân viên sale ở cột Sale/Nhân viên nếu có).";
@@ -745,22 +856,28 @@
                 prompt = "Quét ảnh chụp phần mềm Misa/Hóa đơn lấy: name (Tên khách), amount (Số tiền), và date (Ngày chứng từ/Ngày tạo đơn, định dạng DD/MM/YYYY. Ví dụ 03/06/2026. Nếu không thấy rõ ngày thì bỏ trống).";
                 schema = { type: "OBJECT", properties: { orders: { type: "ARRAY", items: { type: "OBJECT", properties: { name: {type:"STRING"}, amount: {type:"NUMBER"}, date: {type:"STRING"} }, required: ["name","amount"] } } } };
             }
-            try {
-                const response = await fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ contents: [{parts:[{text:prompt}, {inlineData:{mimeType:mime, data:b64}}]}], generationConfig: {responseMimeType:"application/json", responseSchema:schema} }) });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMsg = errorData.error?.message || response.statusText;
-                    showToast(`Lỗi từ Google: ${errorMsg}`, true);
-                    return null;
-                }
 
-                return JSON.parse((await response.json()).candidates[0].content.parts[0].text);
+            try {
+                const res = await fetch(url, { 
+                    method: "POST", 
+                    headers: headers, 
+                    body: JSON.stringify({ 
+                        contents: [{parts:[{text:prompt}, {inlineData:{mimeType:mime, data:b64}}]}], 
+                        generationConfig: {responseMimeType:"application/json", responseSchema:schema} 
+                    }) 
+                });
+                
+                if(res.ok) {
+                    const data = await res.json();
+                    return JSON.parse(data.candidates[0].content.parts[0].text);
+                } else {
+                    const errText = await res.text();
+                    addLog("Phản hồi lỗi từ Google: " + res.status + " - " + errText, "error");
+                }
             } catch (e) { 
-                console.error(e); 
-                showToast(`Lỗi kết nối: ${e.message}`, true);
-                return null;
+                addLog("Kết nối máy chủ Google API thất bại: " + e.message, "error"); 
             }
+            return null;
         }
 
         function renderOrders() {
@@ -888,7 +1005,11 @@
             document.getElementById('confirmModal').classList.add('hidden');
         });
 
+        // Khởi chạy trạng thái API Key
+        updateApiStatus();
         renderOrders();
     </script>
 </body>
 </html>
+
+```
