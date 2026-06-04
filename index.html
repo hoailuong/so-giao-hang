@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sổ Ghi Số Bán Giao Hàng (V6.1)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         input, button, .clickable { touch-action: manipulation; }
@@ -13,12 +15,15 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* Tuỳ chỉnh thanh cuộn */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header ứng dụng -->
     <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-sm sticky top-0 z-10">
         <div class="max-w-md mx-auto px-3 py-2 flex justify-between items-center">
             <div class="flex items-center space-x-2">
@@ -31,12 +36,16 @@
                     <span id="cloudStatusText" class="text-[9px] text-blue-100 font-normal">Đã kết nối</span>
                 </div>
             </div>
+            
             <button id="btnReset" class="bg-red-500 hover:bg-red-600 active:scale-95 text-white px-2 py-1 rounded text-[10px] font-medium transition flex items-center space-x-1">
                 <i class="fa-solid fa-rotate-left"></i><span>Xóa hết</span>
             </button>
         </div>
     </header>
+
     <main class="max-w-md mx-auto px-2.5 mt-3 space-y-3">
+
+        <!-- DỰ PHÒNG -->
         <div class="bg-white rounded-lg p-2 shadow-sm border border-slate-100 flex items-center justify-between">
             <div class="flex items-center space-x-1.5 text-[10px] font-bold text-slate-500 select-none">
                 <i class="fa-solid fa-shield-halved text-emerald-500 text-sm"></i><span>DỰ PHÒNG</span>
@@ -50,8 +59,13 @@
                 </button>
             </div>
         </div>
+
+        <!-- TIẾN ĐỘ MỤC TIÊU DOANH SỐ VÀ THỜI GIAN -->
         <div class="bg-white rounded-xl p-3.5 pl-4 shadow-sm border border-slate-200 flex flex-col space-y-3 relative overflow-hidden">
+            
             <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-red-500 to-blue-500"></div>
+
+            <!-- 1. DOANH SỐ -->
             <div>
                 <div class="flex justify-between items-end mb-1">
                     <div>
@@ -68,19 +82,26 @@
                         <span id="progressPercentage" class="text-lg font-black text-red-600 leading-none mt-0.5">0%</span>
                     </div>
                 </div>
+                
                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                     <div id="progressBarFill" class="bg-gradient-to-r from-red-400 to-red-600 h-full rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
                 </div>
+                
                 <div class="flex justify-between text-[10px] text-slate-500 mt-1.5">
                     <span>Đã đạt: <span id="targetAchievedAmount" class="font-bold text-slate-700">0đ</span></span>
                     <span><span id="targetRemainingText">Còn thiếu:</span> <span id="targetRemainingAmount" class="font-bold text-amber-500">0đ</span></span>
                 </div>
+
+                <!-- TIẾN ĐỘ CHUẨN ĐẾN HÔM NAY -->
                 <div class="mt-2.5 p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center">
                     <span class="text-[10px] text-slate-500">Cần đạt tới hôm nay: <span id="expectedAmount" class="font-black text-slate-800 text-[13px] ml-0.5">0đ</span></span>
                     <span id="runRateStatus" class="font-bold px-2 py-1 rounded text-[10px]">...</span>
                 </div>
             </div>
+
             <div class="border-t border-slate-100"></div>
+
+            <!-- 2. THỜI GIAN -->
             <div>
                 <div class="flex justify-between items-end mb-1">
                     <div>
@@ -94,19 +115,25 @@
                         <span id="timeProgressPercentage" class="text-lg font-black text-blue-600 leading-none mt-0.5">0%</span>
                     </div>
                 </div>
+                
                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                     <div id="timeProgressBarFill" class="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
                 </div>
+                
                 <div class="flex justify-between text-[10px] text-slate-500 mt-1.5">
                     <span>Đã qua: <span id="timeDaysPassedFooter" class="font-bold text-slate-700">0 ngày</span></span>
                     <span>Còn lại: <span id="timeDaysRemainingFooter" class="font-bold text-blue-500">0 ngày</span></span>
                 </div>
             </div>
+            
         </div>
+
+        <!-- BẢNG ĐỒNG HỒ THỐNG KÊ CHI TIẾT -->
         <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-24 h-24 bg-green-50 rounded-full -z-0"></div>
             <span id="dashboardTitle" class="text-[9px] font-bold uppercase tracking-wider text-slate-400 z-10 text-center">TỔNG TIỀN ĐÃ GIAO (TẤT CẢ)</span>
             <span id="totalRevenue" class="text-2xl font-black text-green-600 z-10">0đ</span>
+            
             <div class="grid grid-cols-3 gap-1 text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 w-full z-10">
                 <div class="text-center">
                     <p class="font-bold text-slate-700 text-sm" id="statCompletedCount">0/0</p>
@@ -122,6 +149,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- KHU VỰC NHẬP ĐƠN HÀNG MỚI -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <button id="btnToggleAddForm" class="w-full px-4 py-3.5 flex justify-between items-center bg-slate-50 hover:bg-slate-100 active:bg-slate-200 transition-all">
                 <h2 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -129,6 +158,7 @@
                 </h2>
                 <i id="addFormChevron" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200"></i>
             </button>
+
             <div id="addFormContent" class="hidden border-t border-slate-100 fade-enter">
                 <div class="flex border-b border-slate-100 text-[10px] bg-slate-50/30">
                     <button id="tabSingle" class="flex-1 py-3 text-center font-bold text-blue-600 border-b-2 border-blue-600">
@@ -141,6 +171,8 @@
                         <i class="fa-solid fa-file-excel mr-1 text-emerald-600"></i> Khớp Excel
                     </button>
                 </div>
+
+                <!-- Tab Nhập Lẻ -->
                 <div id="panelSingle" class="p-4 space-y-3">
                     <div class="grid grid-cols-12 gap-3">
                         <div class="col-span-7">
@@ -156,6 +188,8 @@
                         <i class="fa-solid fa-plus"></i><span>Thêm đơn hàng</span>
                     </button>
                 </div>
+
+                <!-- Tab Trộn Misa -->
                 <div id="panelBulk" class="p-4 space-y-4 hidden">
                     <div class="space-y-2">
                         <label class="block text-[10px] text-indigo-600 font-bold uppercase tracking-wide">Quét ảnh Misa bằng AI</label>
@@ -170,6 +204,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tab Khớp Excel -->
                 <div id="panelReconcile" class="p-4 space-y-4 hidden">
                     <div class="space-y-2">
                         <label class="block text-[10px] text-emerald-600 font-bold uppercase tracking-wide">Quét bảng Excel đối chiếu</label>
@@ -186,7 +222,10 @@
                 </div>
             </div>
         </div>
+
+        <!-- DANH SÁCH KHÁCH HÀNG -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            
             <div class="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <i class="fa-regular fa-calendar-days text-slate-400"></i>
@@ -197,6 +236,7 @@
                     <i class="fa-solid fa-xmark mr-1"></i>Bỏ lọc
                 </button>
             </div>
+
             <div class="flex border-b border-slate-100 text-[11px] bg-slate-50/50">
                 <button id="filterTabAll" class="filter-tab-btn flex-1 py-3.5 text-center font-bold text-blue-600 border-b-2 border-blue-500 transition-colors" data-filter="all">
                     Tất cả <span id="countTabAll" class="ml-1 bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
@@ -208,13 +248,17 @@
                     Đã giao <span id="countTabCompleted" class="ml-1 bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
                 </button>
             </div>
+
             <div id="emptyState" class="p-10 text-center text-slate-400 space-y-2">
                 <i class="fa-solid fa-receipt text-4xl text-slate-300"></i>
                 <p class="text-sm font-medium mt-2">Chưa có đơn hàng nào.</p>
             </div>
+
             <ul id="orderList" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></ul>
         </div>
     </main>
+
+    <!-- Dialogs -->
     <div id="targetModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center flex items-center justify-center gap-2">
@@ -230,6 +274,7 @@
             </div>
         </div>
     </div>
+
     <div id="reconcilePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-slate-800 text-center flex items-center justify-center gap-2">
@@ -250,6 +295,7 @@
             </div>
         </div>
     </div>
+
     <div id="mergePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-slate-800 text-center flex items-center justify-center gap-2">
@@ -262,6 +308,7 @@
             </div>
         </div>
     </div>
+
     <div id="editModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center">Sửa Đơn Hàng</h3>
@@ -276,6 +323,7 @@
             </div>
         </div>
     </div>
+
     <div id="deleteItemModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
             <div class="text-center"><i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-2"></i><h3 class="font-bold text-lg">Xóa đơn này?</h3></div>
@@ -286,6 +334,7 @@
             </div>
         </div>
     </div>
+
     <div id="confirmModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center">Xóa toàn bộ?</h3>
@@ -296,6 +345,7 @@
             </div>
         </div>
     </div>
+
     <div id="importModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <h3 class="font-bold text-lg text-center"><i class="fa-solid fa-file-import text-blue-600 mr-2"></i>Khôi phục dữ liệu</h3>
@@ -306,7 +356,8 @@
             </div>
         </div>
     </div>
-    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3.5 rounded-full shadow-2xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2"></div>
+
+    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3.5 rounded-full shadow-2xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2 w-[90%] text-center justify-center break-words"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -336,6 +387,8 @@
         } catch (e) {}
 
         const getOrdersCol = () => { if (!db || !userId) return null; return db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('orders'); };
+        
+        // CHÚ Ý: KHI DÁN VÀO GITHUB, ĐIỀN API KEY CỦA BẠN VÀO GIỮA 2 DẤU NGOẶC KÉP Ở DÒNG DƯỚI ĐÂY
         const apiKey = "AQ.Ab8RN6InZ8D3tqAf22i6UtNDytsfCiPFhFbwqTE1At_YTSa4yQ"; 
 
         const inputName = document.getElementById('inputName');
@@ -441,7 +494,7 @@
         
         function showToast(msg, isError = false) {
             toastMessage.innerHTML = isError ? `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> ${msg}` : `<i class="fa-solid fa-check text-emerald-400"></i> ${msg}`;
-            toastMessage.style.opacity = 1; setTimeout(() => toastMessage.style.opacity = 0, 2500);
+            toastMessage.style.opacity = 1; setTimeout(() => toastMessage.style.opacity = 0, 4000);
         }
 
         function saveData() { localStorage.setItem('delivery_orders_v3', JSON.stringify(orders)); showToast("Đã lưu dữ liệu!"); renderOrders(); }
@@ -555,8 +608,8 @@
             btnReconcileUploadTrigger.classList.add('hidden'); document.getElementById('reconcileScanningIndicator').classList.remove('hidden');
             try {
                 const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "excel");
-                if (res && res.deliveries) processExcel(res.deliveries); else showToast("AI không đọc được bảng này", true);
-            } catch(e) { showToast("Vui lòng thử lại sau.", true); }
+                if (res && res.deliveries) processExcel(res.deliveries); 
+            } catch(e) { /* Error is handled in callGemini */ }
             finally { btnReconcileUploadTrigger.classList.remove('hidden'); document.getElementById('reconcileScanningIndicator').classList.add('hidden'); reconcileInputFile.value = ''; }
         });
 
@@ -628,8 +681,8 @@
             document.getElementById('btnUploadTrigger').classList.add('hidden'); document.getElementById('aiScanningIndicator').classList.remove('hidden');
             try {
                 const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "crm");
-                if (res && res.orders) processMergePreview(res.orders); else showToast("AI không đọc được", true);
-            } catch(e) { showToast("Lỗi phân tích", true); }
+                if (res && res.orders) processMergePreview(res.orders); 
+            } catch(e) { /* Error is handled in callGemini */ }
             finally { document.getElementById('btnUploadTrigger').classList.remove('hidden'); document.getElementById('aiScanningIndicator').classList.add('hidden'); bulkInputFile.value = ''; }
         });
 
@@ -682,7 +735,8 @@
         function fileToBase64(file) { return new Promise((res, rej) => { const r=new FileReader(); r.readAsDataURL(file); r.onload=()=>res(r.result); r.onerror=e=>rej(e); }); }
         
         async function callGemini(b64, mime, type) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            // CHÚ Ý: KHI DÁN VÀO GITHUB, ĐỔI CHỮ gemini-2.5-flash-preview-09-2025 THÀNH gemini-1.5-flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             let prompt = "", schema = {};
             if(type === 'excel') {
                 prompt = "Quét ảnh báo cáo Excel giao hàng lấy: name (tên khách hàng), address (địa chỉ nếu có), amount (số tiền/doanh số), salesperson (tên nhân viên sale ở cột Sale/Nhân viên nếu có).";
@@ -692,10 +746,21 @@
                 schema = { type: "OBJECT", properties: { orders: { type: "ARRAY", items: { type: "OBJECT", properties: { name: {type:"STRING"}, amount: {type:"NUMBER"}, date: {type:"STRING"} }, required: ["name","amount"] } } } };
             }
             try {
-                const res = await fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ contents: [{parts:[{text:prompt}, {inlineData:{mimeType:mime, data:b64}}]}], generationConfig: {responseMimeType:"application/json", responseSchema:schema} }) });
-                if(res.ok) return JSON.parse((await res.json()).candidates[0].content.parts[0].text);
-            } catch (e) { console.error(e); }
-            return null;
+                const response = await fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ contents: [{parts:[{text:prompt}, {inlineData:{mimeType:mime, data:b64}}]}], generationConfig: {responseMimeType:"application/json", responseSchema:schema} }) });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    const errorMsg = errorData.error?.message || response.statusText;
+                    showToast(`Lỗi từ Google: ${errorMsg}`, true);
+                    return null;
+                }
+
+                return JSON.parse((await response.json()).candidates[0].content.parts[0].text);
+            } catch (e) { 
+                console.error(e); 
+                showToast(`Lỗi kết nối: ${e.message}`, true);
+                return null;
+            }
         }
 
         function renderOrders() {
