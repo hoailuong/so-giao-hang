@@ -75,6 +75,9 @@ Bạn phát hiện vấn đề cực kỳ chính xác! Đây là nhược điể
 Sửa const apiKey = ""; thành const apiKey = "DÁN_MÃ_CỦA_BẠN_VÀO_ĐÂY";
 (Nhớ giữ nguyên 2 dấu ngoặc kép).
 
+#Đây là mã nhé
+
+
 ​Sau khi dán mã này, chỉ cần điện thoại bạn đang bật 4G/Wifi, tính năng AI sẽ hoạt động trơn tru dù bạn mở từ file .html trên máy!
 
 ​Bạn có muốn mình hỗ trợ thêm về cách "dọn dẹp" mã nguồn để tối ưu cho phiên bản web này không, hay bạn bắt tay vào làm thử nhé?
