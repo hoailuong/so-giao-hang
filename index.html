@@ -682,7 +682,7 @@
         function fileToBase64(file) { return new Promise((res, rej) => { const r=new FileReader(); r.readAsDataURL(file); r.onload=()=>res(r.result); r.onerror=e=>rej(e); }); }
         
         async function callGemini(b64, mime, type) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             let prompt = "", schema = {};
             if(type === 'excel') {
                 prompt = "Quét ảnh báo cáo Excel giao hàng lấy: name (tên khách hàng), address (địa chỉ nếu có), amount (số tiền/doanh số), salesperson (tên nhân viên sale ở cột Sale/Nhân viên nếu có).";
