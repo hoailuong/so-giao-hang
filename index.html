@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2563eb">
+    
+    <title>Sổ Giao Hàng</title>
+    
+    <!-- CSS Tùy chỉnh Lịch và Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Thư viện SheetJS phiên bản hỗ trợ Style -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    
+    <style>
+        input, button, select, .clickable { touch-action: manipulation; }
+        .fade-enter { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        
+        .flatpickr-day.has-order-ring::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 30px; height: 30px; border: 2px solid #3b82f6; border-radius: 50%; pointer-events: none; box-sizing: border-box;
+        }
+        .flatpickr-day.has-delivery-ring::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 30px; height: 30px; border: 2px solid #10b981; border-radius: 50%; pointer-events: none; box-sizing: border-box;
+        }
+        .flatpickr-day.selected.has-order-ring::after,
+        .flatpickr-day.selected.has-delivery-ring::after { border-color: rgba(255, 255, 255, 0.6); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md z-40">
+        <div class="max-w-md mx-auto px-3 py-2.5 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-white/20 rounded-md flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-truck-fast text-[13px] text-white"></i>
+                </div>
+                <h1 class="text-sm font-black tracking-wide uppercase drop-shadow-sm">Sổ Giao Hàng</h1>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-full border border-white/10 shadow-inner">
+                    <span id="cloudStatusDot" class="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block shadow-[0_0_5px_rgba(255,255,255,0.5)]"></span>
+                    <span id="cloudStatusText" class="text-[9px] font-bold text-blue-50 tracking-wider">Đang kết nối...</span>
+                </div>
+                <button id="btnInstallPWA" class="hidden bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white w-7 h-7 rounded-full text-[12px] font-bold transition flex items-center justify-center animate-pulse shadow-md border border-emerald-400">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button id="btnSettings" class="text-blue-100 hover:text-white active:scale-95 transition text-[15px] p-1 h-7 w-7 flex items-center justify-center">
+                    <i class="fa-solid fa-gear drop-shadow-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-2.5 mt-3 space-y-3.5">
+
+        <!-- Khối Chọn Tháng (Kỳ Kế Toán) -->
+        <div class="bg-white rounded-xl p-3 shadow-sm border-2 border-blue-500/20 flex items-center justify-between gap-3 transition-all hover:border-blue-500/40">
+            <div class="flex items-center space-x-2 shrink-0">
+                <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-book-open text-[15px]"></i>
+                </div>
+                <span class="text-xs font-black text-slate-700 uppercase tracking-wide">Xem Sổ Tháng:</span>
+            </div>
+            <div class="flex items-center gap-2 flex-1 justify-end">
+                <select id="selectMonth" class="bg-slate-50 text-blue-800 text-sm font-black py-1.5 px-3 rounded-lg border border-slate-200 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 shadow-sm">
+                    <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+                    <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+                    <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+                    <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+                </select>
+                <select id="selectYear" class="bg-slate-50 text-blue-800 text-sm font-black py-1.5 px-3 rounded-lg border border-slate-200 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 shadow-sm">
+                    <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KHỐI TIẾN ĐỘ -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-red-500 to-blue-600"></div>
+            <div class="pt-4 pb-4 pl-5 pr-4">
+                <div class="flex justify-between items-start mb-3 gap-1">
+                    <div class="min-w-0 flex-1">
+                        <span id="targetMonthLabel" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1 truncate">Mục tiêu...</span>
+                        <div class="flex items-center gap-1.5">
+                            <span id="targetAmountDisplay" class="text-[22px] font-black text-slate-800 leading-none tracking-tighter truncate">0 ₫</span>
+                            <button id="btnEditTarget" onclick="window.openTargetModal()" class="text-slate-400 hover:text-blue-600 transition bg-slate-100 hover:bg-blue-50 rounded p-1 w-6 h-6 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end shrink-0 pl-1">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Thực Đạt / Thời gian</span>
+                        <div class="flex items-start justify-end gap-1">
+                            <div class="flex flex-col items-end">
+                                <span id="progressPercentage" class="text-[22px] font-black text-slate-400 leading-none tracking-tighter">0%</span>
+                                <span id="progressDiffBadge" class="hidden text-[10px] mt-1 font-bold px-1.5 py-0.5 rounded-md shadow-sm border whitespace-nowrap"></span>
+                            </div>
+                            <span class="text-slate-300 font-light text-[22px] leading-none select-none mx-0.5">/</span>
+                            <div class="flex flex-col items-center">
+                                <span id="timeProgressPercentage" class="text-[22px] font-black text-blue-500 leading-none tracking-tighter">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-14 mb-0">
+                    <div class="relative w-full"> 
+                        <div id="progressBarTrack" class="w-full bg-slate-200 rounded-full h-5 shadow-inner relative flex items-center">
+                            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[26px] w-[2px] bg-slate-300 z-0"></div>
+                            <span class="absolute left-1/2 bottom-full mb-[4px] -translate-x-1/2 text-[10px] font-black text-slate-400 bg-white px-0.5 leading-none z-0 select-none">50%</span>
+                            <div id="expectedBarFill" class="absolute top-0 left-0 bg-blue-300 h-full rounded-full transition-all duration-1000 ease-out z-10 opacity-70" style="width: 0%">
+                                <div class="absolute right-0 top-0 w-0 h-full flex justify-center">
+                                    <div class="absolute bottom-full w-[2px] h-5 bg-blue-300 mb-0.5"></div>
+                                </div>
+                            </div>
+                            <div id="expectedLabelBox" class="absolute bottom-[calc(100%+20px)] transition-all duration-300 z-20 whitespace-nowrap" style="left: 0; opacity: 0;">
+                                <span class="text-[13px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md shadow-sm">Mục tiêu đến nay: <span id="expectedLabelFloat">0</span></span>
+                            </div>
+                            <div id="currentBarFill" class="absolute top-0 left-0 shadow-[2px_0_4px_rgba(0,0,0,0.15)] h-full rounded-full transition-all duration-1000 ease-out z-20" style="width: 0%">
+                                <div class="absolute right-0 top-0 w-0 h-full flex justify-center">
+                                    <div id="currentLineFloat" class="absolute top-full w-[2px] h-5 mt-0.5"></div>
+                                </div>
+                            </div>
+                            <div id="currentLabelBox" class="absolute top-[calc(100%+20px)] transition-all duration-300 z-20 whitespace-nowrap" style="left: 0; opacity: 0;">
+                                <div class="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm p-1 rounded-md shadow-sm border border-slate-100">
+                                    <span class="text-[13px] font-black text-white px-2.5 py-0.5 rounded-md shadow-sm tracking-tight" id="currentLabelFloat">Đạt: 0</span>
+                                    <span id="runRateStatus" class="font-extrabold px-2 py-0.5 rounded-md text-[13px] flex items-center gap-1 shrink-0 border">...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative w-full mt-12 border-t border-slate-100/70 pt-3.5">
+                        <div class="flex justify-between items-end mb-1.5">
+                            <span id="timeProgressTitle" class="text-[11px] font-bold uppercase tracking-wider text-slate-400"><i class="fa-regular fa-clock mr-1"></i>Đã qua: <span id="timeDaysPassedDisplay" class="text-blue-600 font-black">0/30 ngày</span></span>
+                            <span class="text-[11px] font-bold text-slate-400">Còn lại: <span id="timeDaysRemainingFooter" class="text-slate-600">0 ngày</span></span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 shadow-inner relative flex items-center">
+                            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[14px] w-[1.5px] bg-slate-300 z-0"></div>
+                            <span class="absolute left-1/2 bottom-full mb-[2px] -translate-x-1/2 text-[9px] font-bold text-slate-400 bg-white/90 px-0.5 leading-none z-0 select-none">50%</span>
+                            <div id="timeProgressBarFill" class="absolute top-0 left-0 bg-slate-300 h-full rounded-full transition-all duration-700 ease-out z-10" style="width: 0%"></div>
+                        </div>
+                        <span id="timeDaysPassedFooter" class="hidden"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHỐI TỔNG DOANH SỐ -->
+        <div class="bg-gradient-to-br from-emerald-50/60 to-green-50/60 rounded-xl p-4 shadow-md border border-emerald-100 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-100/30 rounded-full -z-0 blur-xl"></div>
+            <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-teal-100/30 rounded-full -z-0 blur-lg"></div>
+            
+            <span id="dashboardTitle" class="text-[11px] font-black uppercase tracking-wider text-emerald-800 z-10 text-center mb-1 flex items-center gap-1.5 justify-center w-full">
+                <i class="fa-solid fa-sack-dollar text-emerald-600"></i> TỔNG DOANH SỐ THÁNG
+            </span>
+            <span id="totalRevenue" class="text-[34px] font-black text-emerald-700 z-10 tracking-tight drop-shadow-sm text-center">0đ</span>
+            
+            <div class="grid grid-cols-3 gap-1.5 text-xs text-slate-600 mt-4 pt-3 border-t border-emerald-100/60 w-full z-10 bg-white/70 rounded-lg p-2 shadow-sm backdrop-blur-sm">
+                <div class="text-center px-1">
+                    <p class="font-extrabold text-slate-700 text-sm" id="statTotalOrdersCount">0</p>
+                    <p class="text-[10px] font-semibold text-slate-500">Tổng số đơn</p>
+                </div>
+                <div class="text-center border-l border-slate-200/50 px-1 bg-amber-50/40 rounded">
+                    <p class="font-extrabold text-amber-700 text-sm" id="statPendingAmount">0đ</p>
+                    <p class="text-[10px] font-semibold text-amber-600" id="statPendingLabel">Chưa giao (0 đơn)</p>
+                </div>
+                <div class="text-center border-l border-slate-200/50 px-1 bg-emerald-50/40 rounded">
+                    <p class="font-extrabold text-emerald-700 text-sm" id="statTotalAmount">0đ</p>
+                    <p class="text-[10px] font-semibold text-emerald-600" id="statTotalLabel">Đã giao (0 đơn)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHỐI QUẢN LÝ ĐƠN HÀNG -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div id="addFormHeader" class="p-3.5 bg-white border-b border-slate-100">
+                <button id="btnToggleAddForm" class="w-full relative flex justify-center items-center gap-2 bg-indigo-600 text-white rounded-xl py-3.5 shadow-md transition-all active:scale-[0.98] hover:bg-indigo-700">
+                    <i class="fa-solid fa-plus-circle text-[18px]"></i>
+                    <h2 class="font-black text-[13px] uppercase tracking-wider">
+                        Thêm & Dò đơn hàng
+                    </h2>
+                    <i id="addFormChevron" class="fa-solid fa-chevron-down text-indigo-200 absolute right-5 transition-transform duration-200 text-lg"></i>
+                </button>
+            </div>
+
+            <div id="addFormContent" class="hidden border-b border-slate-100 fade-enter">
+                <div class="flex border-b border-slate-100 text-[10px] bg-slate-50/30">
+                    <button id="tabSingle" class="flex-1 py-3.5 text-center font-bold text-blue-600 border-b-2 border-blue-600 transition">
+                        <i class="fa-solid fa-keyboard mr-1"></i> Nhập tay
+                    </button>
+                    <button id="tabBulk" class="flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-slate-700 transition">
+                        <i class="fa-solid fa-cloud-arrow-up mr-1 text-indigo-500"></i> Up đơn Misa
+                    </button>
+                    <button id="tabReconcile" class="flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-slate-700 transition">
+                        <i class="fa-solid fa-magnifying-glass-chart mr-1 text-emerald-600"></i> Dò Excel Giao
+                    </button>
+                </div>
+
+                <div id="panelSingle" class="p-4 space-y-3">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">Tên khách hàng</label>
+                            <input type="text" id="inputName" placeholder="Nhập tên khách hàng" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 mb-1 font-bold">Địa chỉ (Tùy chọn)</label>
+                            <input type="text" id="inputAddress" placeholder="Nhập địa chỉ..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-1 font-bold">Số tiền</label>
+                                <input type="text" id="inputAmount" placeholder="Ví dụ: 300" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-600 transition-shadow">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-1 font-bold">Ngày tạo thực tế</label>
+                                <input type="date" id="inputDate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 transition-shadow">
+                            </div>
+                        </div>
+                        <!-- CẢNH BÁO KỲ KẾ TOÁN -->
+                        <div id="periodWarning" class="hidden mt-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                            <i class="fa-solid fa-circle-info text-blue-500 text-sm mt-0.5"></i>
+                            <p class="text-[10px] text-blue-800 font-medium leading-tight" id="periodWarningText"></p>
+                        </div>
+                    </div>
+                    <button id="btnAddManual" class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm rounded-lg transition-all flex items-center justify-center space-x-1 shadow-md mt-2">
+                        <i class="fa-solid fa-plus"></i><span>Thêm đơn hàng</span>
+                    </button>
+                </div>
+
+                <div id="panelBulk" class="p-4 space-y-4 hidden">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] text-indigo-600 font-bold uppercase tracking-wide">Quét ảnh Misa tự động thêm đơn</label>
+                        <div id="btnUploadTrigger" class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-xl p-5 text-center bg-indigo-50/30 active:scale-[0.98] transition cursor-pointer">
+                            <i class="fa-solid fa-camera-retro text-3xl text-indigo-500 mb-2"></i>
+                            <p class="text-sm font-bold text-indigo-700">Chọn ảnh phần mềm Misa</p>
+                        </div>
+                        <input type="file" id="bulkInputFile" accept="image/*" class="hidden">
+                        <div id="aiScanningIndicator" class="hidden flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-indigo-300 space-y-3 fade-enter">
+                            <i class="fa-solid fa-spinner animate-spin text-3xl text-indigo-500"></i>
+                            <span id="aiScanTextBulk" class="text-sm font-bold text-slate-700">AI đang quét dữ liệu...</span>
+                        </div>
+                        <p class="text-[10px] text-indigo-600/80 text-center italic mt-2"><i class="fa-solid fa-circle-info mr-1"></i>Đơn thêm vào sẽ tự động tính doanh số cho Tháng đang mở.</p>
+                    </div>
+                </div>
+
+                <div id="panelReconcile" class="p-4 space-y-4 hidden">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] text-emerald-600 font-bold uppercase tracking-wide mb-1.5">Bước 1: Chốt ngày giao hàng</label>
+                            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 focus-within:ring-2 focus-within:ring-emerald-500 transition-shadow">
+                                <i class="fa-regular fa-calendar-check text-emerald-500"></i>
+                                <input type="date" id="reconcileDateInput" class="w-full p-2 bg-transparent text-sm font-bold text-emerald-800 outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-emerald-600 font-bold uppercase tracking-wide mb-1.5">Bước 2: Tải ảnh Excel để dò</label>
+                            <div id="btnReconcileUploadTrigger" class="border-2 border-dashed border-emerald-200 hover:border-emerald-400 rounded-xl p-6 text-center bg-emerald-50/20 active:scale-[0.98] transition cursor-pointer">
+                                <i class="fa-solid fa-file-excel text-4xl text-emerald-500 mb-2"></i>
+                                <p class="text-sm font-bold text-emerald-700">Chọn ảnh bảng Excel giao hàng</p>
+                            </div>
+                            <input type="file" id="reconcileInputFile" accept="image/*" class="hidden">
+                            <div id="reconcileScanningIndicator" class="hidden flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-emerald-300 space-y-3 fade-enter">
+                                <i class="fa-solid fa-spinner animate-spin text-3xl text-emerald-500"></i>
+                                <span id="aiScanTextReconcile" class="text-sm font-bold text-slate-700">AI đang dò tìm đối chiếu...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-3 pt-3 pb-2 bg-white border-b border-slate-100 flex flex-col gap-2.5">
+                <div id="searchBoxContainer" class="relative w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-[14px]"></i>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Tìm tên khách, địa chỉ, số tiền..." class="w-full pl-8 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                    <button id="btnClearSearch" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fa-solid fa-circle-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-1 w-full">
+                    <div class="flex bg-slate-100 p-0.5 rounded-md border border-slate-200 shrink-0">
+                        <button id="btnFilterTypeCreated" class="px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none bg-blue-600 text-white shadow-sm" data-value="createdAt">
+                            Ngày tạo
+                        </button>
+                        <button id="btnFilterTypeCompleted" class="px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none text-slate-600 hover:text-slate-800" data-value="completedDate">
+                            Ngày giao
+                        </button>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" id="filterDateInput" placeholder="Chọn lọc thực tế..." readonly class="w-full px-1 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-center truncate shadow-sm">
+                    </div>
+                    <button id="btnClearDate" class="hidden w-7 h-7 bg-red-50 text-red-500 hover:bg-red-100 rounded-md text-[12px] font-bold active:scale-95 transition-all shrink-0 flex items-center justify-center border border-red-100">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex border-b border-slate-100 text-[11px] bg-slate-50/50">
+                <button id="filterTabAll" class="filter-tab-btn flex-1 py-3 text-center font-bold text-blue-600 border-b-2 border-blue-500 transition-colors" data-filter="all">
+                    Tất cả <span id="countTabAll" class="ml-1 bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
+                </button>
+                <button id="filterTabPending" class="filter-tab-btn flex-1 py-3 text-center font-semibold text-slate-500 hover:text-slate-700 transition-colors" data-filter="pending">
+                    Chưa giao <span id="countTabPending" class="ml-1 bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
+                </button>
+                <button id="filterTabCompleted" class="filter-tab-btn flex-1 py-3 text-center font-semibold text-slate-500 hover:text-slate-700 transition-colors" data-filter="completed">
+                    Đã giao <span id="countTabCompleted" class="ml-1 bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
+                </button>
+            </div>
+
+            <div class="px-3 py-2 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center text-[11px] relative">
+                <span class="font-bold text-slate-600"><i class="fa-solid fa-list-ul mr-1"></i>Danh sách</span>
+                
+                <div class="flex items-center gap-2">
+                    <button id="btnOpenExportModal" class="flex items-center gap-1.5 border border-emerald-300 rounded px-2 py-1.5 bg-emerald-50 text-emerald-700 shadow-sm outline-none active:scale-95 transition hover:bg-emerald-100">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                        <span class="font-bold text-[10px]">Xuất Excel</span>
+                    </button>
+
+                    <div class="relative" id="customSortDropdown">
+                        <button id="btnSortDropdown" class="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-1.5 bg-white shadow-sm outline-none active:scale-95 transition-transform">
+                            <i class="fa-solid fa-sort text-blue-500"></i>
+                            <span id="sortDropdownText" class="text-slate-700 font-bold text-[10px] whitespace-nowrap">Ngày tạo (Mới nhất)</span>
+                            <i class="fa-solid fa-chevron-down text-[8px] text-slate-400 pointer-events-none"></i>
+                        </button>
+                        
+                        <div id="sortDropdownMenu" class="hidden absolute right-0 mt-1 w-44 rounded-xl shadow-lg bg-white border border-slate-100 z-50 overflow-hidden fade-enter origin-top-right">
+                            <div class="flex flex-col">
+                                <button class="sort-option px-3 py-3 text-left text-[11px] text-slate-700 hover:bg-slate-50 font-bold border-b border-slate-50 transition-colors flex items-center justify-between" data-value="created_desc">
+                                    <span>Ngày tạo (Mới nhất)</span>
+                                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                                </button>
+                                <button class="sort-option px-3 py-3 text-left text-[11px] text-slate-700 hover:bg-slate-50 font-bold border-b border-slate-50 transition-colors flex items-center justify-between" data-value="created_asc">
+                                    <span>Ngày tạo (Cũ nhất)</span>
+                                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                                </button>
+                                <button class="sort-option px-3 py-3 text-left text-[11px] text-slate-700 hover:bg-slate-50 font-bold border-b border-slate-50 transition-colors flex items-center justify-between" data-value="completed_desc">
+                                    <span>Ngày giao (Mới nhất)</span>
+                                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                                </button>
+                                <button class="sort-option px-3 py-3 text-left text-[11px] text-slate-700 hover:bg-slate-50 font-bold transition-colors flex items-center justify-between" data-value="completed_asc">
+                                    <span>Ngày giao (Cũ nhất)</span>
+                                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="sortSelect" value="created_desc">
+            </div>
+
+            <div id="emptyState" class="p-10 text-center text-slate-400 space-y-2">
+                <i class="fa-solid fa-receipt text-4xl text-slate-300"></i>
+                <p class="text-sm font-medium mt-2">Sổ này chưa có đơn hàng.</p>
+            </div>
+
+            <ul id="orderList" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto pb-4"></ul>
+        </div>
+    </main>
+
+    <!-- MODAL TÙY CHỌN XUẤT EXCEL -->
+    <div id="exportExcelModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <h3 class="font-bold text-lg text-slate-800 text-center flex items-center justify-center gap-2">
+                <i class="fa-solid fa-file-excel text-emerald-600"></i> Tùy chọn Xuất File
+            </h3>
+            <p class="text-xs text-slate-500 text-center">Chọn thứ tự sắp xếp đơn hàng trong file Excel</p>
+            <div class="space-y-2 mt-2" id="exportSortOptionsContainer"></div>
+            <div class="flex space-x-3 pt-2">
+                <button id="btnCancelExportModal" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button>
+                <button id="btnConfirmExportExcel" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md flex items-center justify-center gap-1.5"><i class="fa-solid fa-download"></i> Tải xuống</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CÀI ĐẶT -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg flex items-center gap-2 text-slate-800">
+                    <i class="fa-solid fa-gear text-slate-500"></i> Cài đặt hệ thống
+                </h3>
+                <button id="btnCloseSettings" class="text-slate-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full bg-slate-50">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fa-solid fa-robot text-blue-600"></i> Cài đặt AI
+                </h4>
+                <div class="flex gap-2">
+                    <input type="password" id="inputApiKey" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Mã API AI...">
+                    <button id="btnSaveSettings" class="whitespace-nowrap px-4 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm active:scale-95 transition shadow-sm">Lưu mã</button>
+                </div>
+            </div>
+            <div class="border-t border-slate-100"></div>
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fa-solid fa-database text-emerald-600"></i> Quản lý dữ liệu
+                </h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btnExport" class="p-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-200 active:scale-95 transition text-[11px] flex flex-col items-center justify-center gap-1.5 shadow-sm"><i class="fa-solid fa-copy text-lg"></i><span>Sao chép mã</span></button>
+                    <button id="btnImport" class="p-2.5 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-200 active:scale-95 transition text-[11px] flex flex-col items-center justify-center gap-1.5 shadow-sm"><i class="fa-solid fa-file-import text-lg"></i><span>Khôi phục</span></button>
+                </div>
+                <button id="btnReset" class="w-full p-2.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-lg border border-red-200 active:scale-95 transition text-[11px] flex items-center justify-center gap-1.5 shadow-sm mt-1"><i class="fa-solid fa-trash-can"></i><span>Xóa toàn bộ sổ</span></button>
+            </div>
+            <div class="border-t border-slate-100 pt-4 text-center">
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5 tracking-wide">Sổ Giao Hàng - Phiên bản 10.0 (Kỳ kế toán)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CÁC MODAL KHÁC -->
+    <div id="confirmReconcileDateModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl">
+            <div class="text-center"><i class="fa-regular fa-calendar-check text-emerald-500 text-4xl mb-2"></i><h3 class="font-bold text-lg text-slate-800">Kiểm tra Ngày Giao!</h3></div>
+            <div class="text-center"><span id="displayConfirmReconcileDate" class="font-black text-emerald-600 text-3xl inline-block mt-2 border-b-2 border-emerald-200 pb-1">...</span></div>
+            <div class="flex space-x-3 pt-2">
+                <button id="btnCancelConfirmDate" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm active:scale-95 transition">Chọn lại</button>
+                <button id="btnProceedConfirmDate" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Tải ảnh</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="targetModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <h3 class="font-bold text-lg text-center flex items-center justify-center gap-2"><i class="fa-solid fa-bullseye text-blue-600"></i> Cài đặt Mục Tiêu</h3>
+            <p class="text-xs text-slate-500 text-center" id="targetModalDesc">Nhập mục tiêu doanh số</p>
+            <div class="space-y-3">
+                <input type="text" id="editTargetInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-lg text-center font-black text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Nhập mục tiêu">
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button id="btnCancelTarget" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button>
+                <button id="btnConfirmTarget" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Lưu Mục Tiêu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SỬA ĐƠN HÀNG (CÓ THÊM CHỌN KỲ KẾ TOÁN) -->
+    <div id="editModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 class="font-bold text-lg text-center">Sửa Đơn Hàng</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] text-slate-500 font-bold mb-1">Tên khách hàng</label>
+                    <input type="text" id="editName" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 font-bold mb-1">Địa chỉ</label>
+                    <input type="text" id="editAddress" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] text-slate-500 font-bold mb-1">Số tiền</label>
+                        <input type="text" id="editAmount" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-500 font-bold mb-1">Ngày tạo thực tế</label>
+                        <input type="date" id="editDate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-emerald-600 font-bold mb-1">Ngày giao (để trống nếu chưa)</label>
+                    <input type="date" id="editDeliveryDate" class="w-full p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-shadow">
+                </div>
+                <!-- PHẦN CHỌN KỲ KẾ TOÁN -->
+                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                    <label class="block text-[11px] text-indigo-700 font-black mb-1.5"><i class="fa-solid fa-book-open mr-1"></i> Tính vào doanh số sổ tháng:</label>
+                    <div class="flex gap-2">
+                        <select id="editPeriodMonth" class="w-1/2 p-2 bg-white border border-indigo-200 rounded-md text-sm font-bold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+                            <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+                            <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+                            <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+                        </select>
+                        <select id="editPeriodYear" class="w-1/2 p-2 bg-white border border-indigo-200 rounded-md text-sm font-bold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button id="btnCancelEdit" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button>
+                <button id="btnConfirmEdit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XÁC NHẬN ĐỐI CHIẾU EXCEL & MISA (Giữ nguyên cấu trúc, chỉ cập nhật ID/Text) -->
+    <div id="reconcilePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl"><h3 class="font-bold text-lg text-slate-800 text-center"><i class="fa-solid fa-file-excel text-emerald-600"></i> Xác nhận Đối chiếu</h3><div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-800 shadow-inner space-y-2"><div class="flex justify-between font-bold pb-2 border-b border-emerald-200"><span>Tổng đơn khớp:</span><span id="reconcileTotalMatchedCount">0 đơn</span></div><div class="flex justify-between items-center pb-2 border-b border-emerald-200 text-blue-700"><span class="text-[11px] font-bold uppercase">Tổng tiền hôm nay:</span><span id="reconcileTotalMoney" class="font-black text-base">0đ</span></div><div class="grid grid-cols-2 gap-2 text-[11px]"><div><span class="block text-slate-500 font-medium">Đủ điều kiện:</span><span id="reconcileAutoTickCount" class="font-black text-emerald-600 text-sm">0 đơn</span></div><div class="border-l border-emerald-200 pl-2"><span class="block text-slate-500 font-medium">Lệch tiền:</span><span id="reconcileMismatchCount" class="font-black text-red-500 text-sm">0 đơn</span></div></div></div><ul id="reconcilePreviewList" class="max-h-56 overflow-y-auto rounded-xl p-1 space-y-1.5 bg-slate-50 border border-slate-200"></ul><div class="flex space-x-3 pt-2"><button id="btnCancelReconcile" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm active:scale-95 transition">Hủy bỏ</button><button id="btnConfirmReconcile" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Đồng ý tích</button></div></div>
+    </div>
+    
+    <div id="mergePreviewModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl"><h3 class="font-bold text-lg text-slate-800 text-center"><i class="fa-solid fa-cloud-arrow-down text-indigo-600"></i> Xác nhận đơn Misa</h3><div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-800 shadow-inner space-y-2"><div class="flex justify-between font-bold pb-2 border-b border-indigo-200"><span>Tổng đơn quét được:</span><span id="mergeTotalCount">0 đơn</span></div><div class="grid grid-cols-2 gap-2 text-[11px]"><div><span class="block text-slate-500 font-medium">Đơn mới:</span><span id="mergeNewCount" class="font-black text-indigo-600 text-sm">0 đơn</span></div><div class="border-l border-indigo-200 pl-2"><span class="block text-slate-500 font-medium">Trùng lặp:</span><span id="mergeDupCount" class="font-black text-slate-500 text-sm">0 đơn</span></div></div><div class="flex justify-between items-center pt-2 border-t border-indigo-200 mt-2"><span class="text-[11px] font-bold text-slate-600">Doanh số tăng thêm cho sổ:</span><span id="mergeNewTotalAmount" class="font-black text-blue-600 text-base">0đ</span></div></div><ul id="mergePreviewList" class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-1.5 space-y-1.5 bg-slate-50"></ul><div class="flex space-x-3 pt-2"><button id="btnCancelMerge" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm active:scale-95 transition">Hủy bỏ</button><button id="btnConfirmMerge" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Thêm vào sổ</button></div></div>
+    </div>
+
+    <div id="confirmUncheckModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden"><div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl"><div class="text-center"><div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-3 border border-amber-200"><i class="fa-solid fa-circle-question text-2xl"></i></div><h3 class="font-black text-slate-800 text-lg">Chuyển thành Chưa Giao?</h3></div><div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-center text-sm" id="uncheckModalInfo"></div><div class="flex space-x-3 pt-2"><button id="btnCancelUncheck" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-700 text-sm active:scale-95 transition">Hủy</button><button id="btnConfirmUncheck" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold text-sm active:scale-95 transition">Đồng ý</button></div></div></div>
+    <div id="deleteItemModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden"><div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl"><div class="text-center"><i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-2"></i><h3 class="font-bold text-lg">Xóa đơn này?</h3></div><p class="text-sm text-center text-slate-600" id="deleteItemInfo"></p><div class="flex space-x-3 pt-2"><button id="btnCancelDeleteItem" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button><button id="btnConfirmDeleteItem" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Xóa</button></div></div></div>
+    <div id="confirmModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden"><div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl"><h3 class="font-bold text-lg text-center text-red-600" id="confirmDeleteTitle">Xóa toàn bộ sổ?</h3><div class="flex space-x-3 pt-2"><button id="btnCancelDelete" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button><button id="btnConfirmDelete" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Xóa hết</button></div></div></div>
+    <div id="importModal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 hidden"><div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl"><h3 class="font-bold text-lg text-center"><i class="fa-solid fa-file-import text-blue-600 mr-2"></i>Khôi phục dữ liệu</h3><textarea id="importText" rows="5" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 break-all" placeholder="Dán mã sao lưu vào đây..."></textarea><div class="flex space-x-3 pt-2"><button id="btnCancelImport" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm active:scale-95 transition">Hủy</button><button id="btnConfirmImport" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm active:scale-95 transition shadow-md">Khôi phục</button></div></div></div>
+    
+    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3.5 rounded-full shadow-2xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2 w-max max-w-[90%]"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+    <script>
+        const SOLAR_HOLIDAYS = [ '1/1', '30/4', '1/5', '2/9' ];
+        const storage = { get: function(k) { try{return localStorage.getItem(k);}catch(e){return null;} }, set: function(k,v) { try{localStorage.setItem(k,v);}catch(e){} }, remove: function(k) { try{localStorage.removeItem(k);}catch(e){} } };
+
+        const currentDateObj = new Date();
+        let currentSelectedMonth = parseInt(storage.get('current_selected_month')) || (currentDateObj.getMonth() + 1);
+        let currentSelectedYear = parseInt(storage.get('current_selected_year')) || currentDateObj.getFullYear();
+
+        document.getElementById('selectMonth').value = currentSelectedMonth;
+        document.getElementById('selectYear').value = currentSelectedYear;
+
+        let orders = [];
+        try {
+            const data = storage.get('delivery_orders_v5');
+            if (data) orders = JSON.parse(data);
+        } catch(e) {}
+
+        let monthlyTargetsMap = {};
+        try { const tD = storage.get('monthly_targets_v9'); if (tD) monthlyTargetsMap = JSON.parse(tD); } catch (e) {}
+
+        function getTargetForMonthYear(month, year) { const k = `${month}_${year}`; return monthlyTargetsMap[k] !== undefined ? monthlyTargetsMap[k] : 0; }
+        function setTargetForMonthYear(month, year, value) { monthlyTargetsMap[`${month}_${year}`] = value; storage.set('monthly_targets_v9', JSON.stringify(monthlyTargetsMap)); }
+
+        // MÃ FIREBASE (Giữ nguyên)
+        const MY_FIREBASE_CONFIG = { apiKey: "AIzaSyBLHnN-iJFXr11dGQs-xSo76jtL35tF3GY", authDomain: "sogiaohang.firebaseapp.com", projectId: "sogiaohang", storageBucket: "sogiaohang.firebasestorage.app", messagingSenderId: "878209095266", appId: "1:878209095266:web:1af5531df1e716346b633b", measurementId: "G-CKEB81GNF7" };
+        let db = null, auth = null, appId = 'sales-tracker-app-v8', userId = null, useCloud = false;
+        try {
+            let configToUse = typeof __firebase_config !== 'undefined' && __firebase_config ? JSON.parse(__firebase_config) : MY_FIREBASE_CONFIG;
+            if (configToUse) { firebase.initializeApp(configToUse); auth = firebase.auth(); db = firebase.firestore(); appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-tracker-github'; useCloud = true; }
+        } catch (e) { console.error(e); }
+        const getOrdersCol = () => { if (!db || !userId) return null; return db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('orders'); };
+
+        let cachedModelName = null;
+        let lastSafeCurrentPerc = 0; let lastSafeExpectedPerc = 0;
+        let currentDisplayOrders = [];
+
+        // DOM Elements
+        const inputName = document.getElementById('inputName'), inputAddress = document.getElementById('inputAddress'), inputAmount = document.getElementById('inputAmount'), inputDate = document.getElementById('inputDate');
+        const periodWarning = document.getElementById('periodWarning'), periodWarningText = document.getElementById('periodWarningText');
+        const orderList = document.getElementById('orderList'), emptyState = document.getElementById('emptyState'), toastMessage = document.getElementById('toastMessage');
+        const filterDateInput = document.getElementById('filterDateInput'), btnClearDate = document.getElementById('btnClearDate');
+        let filterTypeValue = 'createdAt', filterDateValue = '';
+
+        // --- CỐT LÕI: LOGIC KỲ KẾ TOÁN (ACCOUNTING PERIOD) ---
+        function getOrdersForCurrentSelection() {
+            return orders.filter(o => {
+                // Tương thích ngược: Nếu đơn cũ chưa có period, lấy tháng từ createdAt
+                let pMonth = o.periodMonth;
+                let pYear = o.periodYear;
+                if (!pMonth || !pYear) {
+                    const dateObj = new Date(o.createdAt || Date.now());
+                    pMonth = dateObj.getMonth() + 1;
+                    pYear = dateObj.getFullYear();
+                }
+                return pMonth === currentSelectedMonth && pYear === currentSelectedYear;
+            });
+        }
+
+        // Logic kiểm tra UI cảnh báo
+        function checkPeriodWarning(selectedDateStr) {
+            if (!selectedDateStr) return;
+            const [y, m, d] = selectedDateStr.split('-');
+            const inputMonth = parseInt(m);
+            if (inputMonth !== currentSelectedMonth) {
+                periodWarningText.innerHTML = `Đơn ngày <b>${d}/${m}</b> nhưng hệ thống sẽ tự động ghim vào doanh số <b>Sổ Tháng ${currentSelectedMonth}</b> bạn đang mở.`;
+                periodWarning.classList.remove('hidden');
+            } else {
+                periodWarning.classList.add('hidden');
+            }
+        }
+
+        inputDate.addEventListener('change', (e) => checkPeriodWarning(e.target.value));
+
+        function updateInputDateDefault() {
+            const now = new Date();
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            if (currentSelectedMonth === (now.getMonth() + 1) && currentSelectedYear === now.getFullYear()) {
+                inputDate.value = localDate;
+            } else {
+                inputDate.value = `${currentSelectedYear}-${String(currentSelectedMonth).padStart(2, '0')}-01`;
+            }
+            document.getElementById('reconcileDateInput').value = localDate;
+            checkPeriodWarning(inputDate.value);
+        }
+        updateInputDateDefault();
+
+        // Xử lý Flatpickr
+        let datePickerInstance = null;
+        function getActiveDatesForCalendar() {
+            const uniqueDates = new Set();
+            // CHỈ lấy active date của các đơn NẰM TRONG KỲ KẾ TOÁN ĐANG XEM
+            const currentMonthOrders = getOrdersForCurrentSelection(); 
+            currentMonthOrders.forEach(o => {
+                if (filterTypeValue === 'createdAt') {
+                    const d = new Date(o.createdAt || Date.now());
+                    uniqueDates.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+                } else if (filterTypeValue === 'completedDate' && o.completed && o.completedDate) {
+                    uniqueDates.add(o.completedDate);
+                }
+            });
+            return uniqueDates;
+        }
+
+        function initCustomDatePicker() {
+            if (datePickerInstance) datePickerInstance.destroy();
+            if (flatpickr.l10ns && flatpickr.l10ns.vn) flatpickr.l10ns.vn.rangeSeparator = " đến ";
+            datePickerInstance = flatpickr("#filterDateInput", {
+                locale: "vn", mode: "range", dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", disableMobile: true,
+                onClose: function(sel, dStr, inst) { if (sel.length === 1) inst.setDate([sel[0], sel[0]], true); },
+                onDayCreate: function(dObj, dStr, fp, dayElem) {
+                    const d = dayElem.dateObj;
+                    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    const activeDates = getActiveDatesForCalendar();
+                    dayElem.classList.remove('has-order-ring', 'has-delivery-ring');
+                    if (activeDates.has(ds)) dayElem.classList.add(filterTypeValue === 'createdAt' ? 'has-order-ring' : 'has-delivery-ring');
+                },
+                onChange: function(sel, dStr) {
+                    filterDateValue = dStr; 
+                    if(filterDateValue) { document.getElementById('searchInput').value = ''; document.getElementById('btnClearSearch').classList.add('hidden'); }
+                    renderOrders();
+                }
+            });
+        }
+        initCustomDatePicker();
+
+        // Chuyển tháng/năm
+        document.getElementById('selectMonth').addEventListener('change', (e) => {
+            currentSelectedMonth = parseInt(e.target.value); storage.set('current_selected_month', currentSelectedMonth);
+            filterDateValue = ''; if (datePickerInstance) datePickerInstance.clear();
+            initCustomDatePicker(); updateInputDateDefault(); renderOrders();
+        });
+        document.getElementById('selectYear').addEventListener('change', (e) => {
+            currentSelectedYear = parseInt(e.target.value); storage.set('current_selected_year', currentSelectedYear);
+            filterDateValue = ''; if (datePickerInstance) datePickerInstance.clear();
+            initCustomDatePicker(); updateInputDateDefault(); renderOrders();
+        });
+
+        // Search & Filter Tabs & Sort (Code ẩn đi để gọn, logic giữ nguyên)
+        const searchInput = document.getElementById('searchInput'), btnClearSearch = document.getElementById('btnClearSearch');
+        searchInput.addEventListener('input', (e) => { if (e.target.value.trim().length > 0) btnClearSearch.classList.remove('hidden'); else btnClearSearch.classList.add('hidden'); renderOrders(); });
+        btnClearSearch.addEventListener('click', () => { searchInput.value = ''; btnClearSearch.classList.add('hidden'); renderOrders(); });
+        
+        let currentFilter = 'all';
+        document.querySelectorAll('.filter-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFilter = btn.getAttribute('data-filter');
+                document.querySelectorAll('.filter-tab-btn').forEach(b => { b.className = "filter-tab-btn flex-1 py-3 text-center font-semibold text-slate-500 hover:text-slate-700 transition-colors"; const span = b.querySelector('span'); if(span) span.className = "ml-1 bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full text-[9px]"; });
+                let tC = currentFilter === 'all' ? 'text-blue-600' : (currentFilter === 'pending' ? 'text-amber-600' : 'text-emerald-600');
+                let bC = currentFilter === 'all' ? 'border-blue-500' : (currentFilter === 'pending' ? 'border-amber-500' : 'border-emerald-500');
+                btn.className = `filter-tab-btn flex-1 py-3 text-center font-bold ${tC} border-b-2 ${bC} transition-colors`;
+                let sBg = currentFilter === 'all' ? 'bg-blue-100' : (currentFilter === 'pending' ? 'bg-amber-100' : 'bg-emerald-100');
+                let sT = currentFilter === 'all' ? 'text-blue-800' : (currentFilter === 'pending' ? 'text-amber-800' : 'text-emerald-800');
+                const aS = btn.querySelector('span'); if(aS) aS.className = `ml-1 ${sBg} ${sT} px-1.5 py-0.5 rounded-full text-[9px]`;
+                renderOrders();
+            });
+        });
+
+        document.getElementById('btnFilterTypeCreated').addEventListener('click', () => { filterTypeValue = 'createdAt'; document.getElementById('btnFilterTypeCreated').className = "px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none bg-blue-600 text-white shadow-sm"; document.getElementById('btnFilterTypeCompleted').className = "px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none text-slate-600 hover:text-slate-800"; filterDateValue = ''; if (datePickerInstance) datePickerInstance.clear(); initCustomDatePicker(); renderOrders(); });
+        document.getElementById('btnFilterTypeCompleted').addEventListener('click', () => { filterTypeValue = 'completedDate'; document.getElementById('btnFilterTypeCompleted').className = "px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none bg-blue-600 text-white shadow-sm"; document.getElementById('btnFilterTypeCreated').className = "px-2 py-1.5 rounded-md text-[10px] font-black transition-all duration-200 focus:outline-none text-slate-600 hover:text-slate-800"; filterDateValue = ''; if (datePickerInstance) datePickerInstance.clear(); initCustomDatePicker(); renderOrders(); });
+        btnClearDate.addEventListener('click', () => { filterDateValue = ''; if (datePickerInstance) datePickerInstance.clear(); renderOrders(); });
+
+        const btnSortDropdown = document.getElementById('btnSortDropdown'), sortDropdownMenu = document.getElementById('sortDropdownMenu'), sortDropdownText = document.getElementById('sortDropdownText'), sortInput = document.getElementById('sortSelect'), sortOptions = document.querySelectorAll('.sort-option');
+        btnSortDropdown.addEventListener('click', (e) => { e.stopPropagation(); sortDropdownMenu.classList.toggle('hidden'); }); document.addEventListener('click', (e) => { if (!sortDropdownMenu.contains(e.target) && !btnSortDropdown.contains(e.target)) sortDropdownMenu.classList.add('hidden'); });
+        sortOptions.forEach(opt => { opt.addEventListener('click', (e) => { e.stopPropagation(); const val = opt.getAttribute('data-value'); sortInput.value = val; sortDropdownText.innerText = opt.querySelector('span').textContent.trim(); updateSortUI(val); sortDropdownMenu.classList.add('hidden'); renderOrders(); }); });
+        function updateSortUI(activeValue) { sortOptions.forEach(opt => { const val = opt.getAttribute('data-value'), icon = opt.querySelector('.check-icon'); if (val === activeValue) { opt.classList.add('bg-blue-50', 'text-blue-700'); if (icon) icon.classList.remove('hidden'); } else { opt.classList.remove('bg-blue-50', 'text-blue-700'); if (icon) icon.classList.add('hidden'); } }); } updateSortUI(sortInput.value);
+
+        // Utilities
+        function formatMoney(amount) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount); }
+        function formatNumberWithCommas(value) { if (!value) return ""; return value.toString().replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+        function getOnlyDateStr(createdAt) { const d = createdAt ? new Date(createdAt) : new Date(); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
+        function formatDateVN(dateString) { if (!dateString) return ''; const p = dateString.split('-'); if (p.length !== 3) return dateString; return `${p[2]}/${p[1]}/${p[0]}`; }
+        function normalizeStr(str) { if (!str) return ""; return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[đĐ]/g, "d").replace(/[^a-z0-9]/g, ""); }
+        function showToast(msg, isError = false) { toastMessage.innerHTML = isError ? `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> ${msg}` : `<i class="fa-solid fa-check text-emerald-400"></i> ${msg}`; toastMessage.style.opacity = 1; setTimeout(() => toastMessage.style.opacity = 0, 3000); }
+        function saveData() { storage.set('delivery_orders_v5', JSON.stringify(orders)); }
+
+        inputAmount.addEventListener('input', function() { let c = this.selectionStart, l = this.value.length; this.value = formatNumberWithCommas(this.value); this.setSelectionRange(c + (this.value.length - l), c + (this.value.length - l)); });
+        document.getElementById('editAmount').addEventListener('input', function() { let c = this.selectionStart, l = this.value.length; this.value = formatNumberWithCommas(this.value); this.setSelectionRange(c + (this.value.length - l), c + (this.value.length - l)); });
+
+        // TẠO ĐƠN THỦ CÔNG (Gắn Kỳ kế toán)
+        document.getElementById('btnAddManual').addEventListener('click', async () => {
+            const rawName = inputName.value; const finalName = rawName.trim(); const address = inputAddress.value.trim();
+            let amount = parseFloat(inputAmount.value.replace(/,/g, '')) || 0;
+            if (!finalName) return inputName.focus();
+            if (amount > 0 && amount < 100000) amount *= 1000;
+
+            let finalCreatedAt = Date.now();
+            if (inputDate.value) { const [y, m, d] = inputDate.value.split('-'); finalCreatedAt = new Date(y, m - 1, d, 12).getTime(); }
+
+            // Gắn chặt vào THÁNG/NĂM đang hiển thị trên UI
+            const newOrder = { 
+                id: Date.now().toString(), name: finalName, address: address, amount, 
+                completed: false, createdAt: finalCreatedAt, completedDate: null,
+                periodMonth: currentSelectedMonth, periodYear: currentSelectedYear 
+            };
+            
+            orders.unshift(newOrder); saveData(); renderOrders(); showToast(`Đã thêm vào DS Tháng ${currentSelectedMonth}!`);
+            const col = getOrdersCol(); if(col) col.doc(newOrder.id).set(newOrder).catch(e=>console.error(e));
+            
+            inputName.value = ''; inputAddress.value = ''; inputAmount.value = ''; updateInputDateDefault(); inputName.focus();
+        });
+
+        // SỬA ĐƠN HÀNG (Sửa cả Kỳ kế toán)
+        let editingOrderId = null;
+        window.openEditModal = (id) => {
+            const order = orders.find(o => o.id === id); if (!order) return;
+            editingOrderId = id;
+            document.getElementById('editName').value = order.name;
+            document.getElementById('editAddress').value = order.address || '';
+            document.getElementById('editAmount').value = formatNumberWithCommas(order.amount.toString());
+            const d = new Date(order.createdAt || Date.now());
+            document.getElementById('editDate').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            document.getElementById('editDeliveryDate').value = order.completedDate || '';
+            
+            // Xử lý kỳ kế toán
+            let pMonth = order.periodMonth; let pYear = order.periodYear;
+            if (!pMonth || !pYear) { pMonth = d.getMonth() + 1; pYear = d.getFullYear(); }
+            document.getElementById('editPeriodMonth').value = pMonth;
+            document.getElementById('editPeriodYear').value = pYear;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        document.getElementById('btnConfirmEdit').addEventListener('click', () => {
+            if (!editingOrderId) return;
+            const finalName = document.getElementById('editName').value.trim(); const address = document.getElementById('editAddress').value.trim();
+            let amount = parseFloat(document.getElementById('editAmount').value.replace(/,/g, '')) || 0;
+            if(!finalName) return; if (amount > 0 && amount < 100000) amount *= 1000;
+            
+            const dateVal = document.getElementById('editDate').value; let finalDate = Date.now();
+            if(dateVal) { const [y, m, d] = dateVal.split('-'); finalDate = new Date(y, m-1, d, 12).getTime(); }
+            const deliveryDateVal = document.getElementById('editDeliveryDate').value || null;
+            let isCompleted = orders.find(o => o.id === editingOrderId).completed;
+            if (deliveryDateVal && !isCompleted) isCompleted = true; if (!deliveryDateVal && isCompleted) isCompleted = false;
+
+            const newPeriodMonth = parseInt(document.getElementById('editPeriodMonth').value);
+            const newPeriodYear = parseInt(document.getElementById('editPeriodYear').value);
+
+            orders = orders.map(o => o.id === editingOrderId ? { ...o, name: finalName, address: address, amount, createdAt: finalDate, completedDate: deliveryDateVal, completed: isCompleted, periodMonth: newPeriodMonth, periodYear: newPeriodYear } : o);
+            saveData(); renderOrders(); showToast("Đã lưu thay đổi!");
+            const col = getOrdersCol(); if(col) col.doc(editingOrderId).update({ name: finalName, address: address, amount, createdAt: finalDate, completedDate: deliveryDateVal, completed: isCompleted, periodMonth: newPeriodMonth, periodYear: newPeriodYear });
+            document.getElementById('editModal').classList.add('hidden'); editingOrderId = null;
+        });
+
+        // ================= XỬ LÝ AI UP ĐƠN MISA =================
+        let parsedMergeOrders = [];
+        document.getElementById('btnUploadTrigger').addEventListener('click', () => document.getElementById('bulkInputFile').click());
+        document.getElementById('bulkInputFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            document.getElementById('btnUploadTrigger').classList.add('hidden'); document.getElementById('aiScanningIndicator').classList.remove('hidden');
+            try { const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "crm"); if (res && res.orders) processMergePreview(res.orders); else if (res !== null) showToast("AI không phân tích được ảnh", true); } catch(e) { showToast("Lỗi quét", true); } finally { document.getElementById('btnUploadTrigger').classList.remove('hidden'); document.getElementById('aiScanningIndicator').classList.add('hidden'); e.target.value = ''; }
+        });
+
+        function processMergePreview(items) {
+            let newCount = 0, dupCount = 0, newAmountTotal = 0;
+            const currentMonthOrders = getOrdersForCurrentSelection();
+            
+            parsedMergeOrders = items.map((item, idx) => {
+                let amt = item.amount || 0; if(amt > 0 && amt < 100000) amt *= 1000;
+                let itemDate = Date.now(); 
+                if (item.date) { const p = item.date.split(/[-/]/); if (p.length >= 3) { let y = parseInt(p[2], 10); if (y < 100) y += 2000; const d = new Date(y, parseInt(p[1], 10)-1, parseInt(p[0], 10), 12); if (!isNaN(d.getTime())) itemDate = d.getTime(); } } 
+                else { itemDate = new Date(currentSelectedYear, currentSelectedMonth - 1, 15, 12).getTime(); }
+                
+                // Misa Import: Ép luôn kỳ kế toán vào tháng đang xem
+                return { id: `bulk_${Date.now()}_${idx}`, name: (item.name || "").trim(), address: item.address || "", amount: amt, completed: false, createdAt: itemDate, completedDate: null, periodMonth: currentSelectedMonth, periodYear: currentSelectedYear };
+            }).filter(o => o.name && o.amount > 0);
+            
+            if(parsedMergeOrders.length === 0) return showToast("Không có đơn hợp lệ", true);
+            
+            document.getElementById('mergePreviewList').innerHTML = parsedMergeOrders.map(item => {
+                // Check trùng lặp CHỈ VỚI THÁNG ĐANG XEM (Không sợ trùng với đơn tháng trước/sau)
+                const isDup = currentMonthOrders.some(o => normalizeStr(o.name) === normalizeStr(item.name) && Math.round(o.amount) === Math.round(item.amount));
+                if (isDup) dupCount++; else { newCount++; newAmountTotal += item.amount; }
+                
+                return `
+                    <li class="flex flex-col p-3 rounded-lg mb-1 shadow-sm ${isDup ? 'bg-slate-100 text-slate-400' : 'bg-white border border-indigo-100'}">
+                        <div class="flex items-center justify-between"><span class="font-bold text-sm ${isDup ? 'line-through' : 'text-slate-800'}">${item.name}</span><div class="flex items-center gap-2"><span class="font-bold text-sm ${isDup ? 'line-through' : 'text-blue-600'}">${formatMoney(item.amount)}</span>${isDup ? `<span class="bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded">Trùng</span>` : `<span class="bg-indigo-100 text-indigo-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Mới</span>`}</div></div>
+                        ${item.address ? `<div class="text-[10px] text-slate-500 mt-0.5 leading-tight"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>${item.address}</div>` : ''}
+                        <div class="flex justify-between items-center mt-1"><span class="text-[10px] text-slate-500"><i class="fa-regular fa-calendar-days mr-1"></i>Ngày thực: ${getOnlyDateStr(item.createdAt)}</span><span class="text-[9px] bg-blue-100 text-blue-800 px-1 rounded font-bold">Kỳ T${currentSelectedMonth}</span></div>
+                    </li>`;
+            }).join('');
+            
+            document.getElementById('mergeTotalCount').innerText = `${parsedMergeOrders.length} đơn`; document.getElementById('mergeNewCount').innerText = `${newCount} đơn`; document.getElementById('mergeDupCount').innerText = `${dupCount} đơn`; document.getElementById('mergeNewTotalAmount').innerText = formatMoney(newAmountTotal);
+            const btnConfirmMerge = document.getElementById('btnConfirmMerge');
+            if (newCount === 0) { btnConfirmMerge.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-400'); btnConfirmMerge.classList.remove('bg-indigo-600', 'active:scale-95'); btnConfirmMerge.disabled = true; btnConfirmMerge.innerText = "Không có đơn mới"; } else { btnConfirmMerge.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-400'); btnConfirmMerge.classList.add('bg-indigo-600', 'active:scale-95'); btnConfirmMerge.disabled = false; btnConfirmMerge.innerText = "Thêm vào sổ"; }
+            document.getElementById('mergePreviewModal').classList.remove('hidden');
+        }
+
+        document.getElementById('btnConfirmMerge').addEventListener('click', () => {
+            if (!parsedMergeOrders || parsedMergeOrders.length === 0) return;
+            const currentMonthOrders = getOrdersForCurrentSelection();
+            let addedCount = 0;
+            parsedMergeOrders.forEach(item => {
+                const isDup = currentMonthOrders.some(o => normalizeStr(o.name) === normalizeStr(item.name) && Math.round(o.amount) === Math.round(item.amount));
+                if (!isDup) { orders.unshift(item); addedCount++; const col = getOrdersCol(); if(col) col.doc(item.id).set(item).catch(e => console.error(e)); }
+            });
+            if (addedCount > 0) { saveData(); renderOrders(); showToast(`Đã ghi ${addedCount} đơn vào doanh số Tháng ${currentSelectedMonth}!`); }
+            document.getElementById('mergePreviewModal').classList.add('hidden'); parsedMergeOrders = [];
+        });
+
+        // Hàm File/AI (ẩn nội dung chi tiết)
+        function fileToBase64(file) { return new Promise((res, rej) => { const r=new FileReader(); r.readAsDataURL(file); r.onload=()=>res(r.result); r.onerror=e=>rej(e); }); }
+        async function getBestModelFromGoogle(apiKey) { if (cachedModelName) return cachedModelName; try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`); if (!res.ok) throw new Error(); const data = await res.json(); if (!data.models) return "gemini-2.5-flash"; const validModels = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent") && m.name.includes("gemini")); const names = validModels.map(m => m.name.replace('models/', '')); if (names.includes("gemini-2.5-flash")) cachedModelName = "gemini-2.5-flash"; else if (names.includes("gemini-2.0-flash")) cachedModelName = "gemini-2.0-flash"; else if (names.includes("gemini-1.5-flash-002")) cachedModelName = "gemini-1.5-flash-002"; else if (names.includes("gemini-1.5-flash")) cachedModelName = "gemini-1.5-flash"; else cachedModelName = names.find(n => n.includes("flash")) || names[0]; return cachedModelName; } catch (e) { return "gemini-2.5-flash"; } }
+        async function callGemini(b64, mime, type) { const userSavedKey = storage.get('gemini_api_key'); if (!userSavedKey) { showToast("Thiếu API Key!", true); throw new Error(); } const modelName = await getBestModelFromGoogle(userSavedKey); const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${userSavedKey}`; let prompt = type === 'excel' ? `BẠN LÀ CHUYÊN GIA KẾ TOÁN VÀ XỬ LÝ DỮ LIỆU. Nhiệm vụ của bạn là đọc TOÀN BỘ các dòng dữ liệu có trong ảnh chụp bảng Excel giao hàng này.\nYÊU CẦU BẮT BUỘC:\n1. ĐỌC TỪNG DÒNG MỘT TỪ TRÊN XUỐNG DƯỚI. TUYỆT ĐỐI KHÔNG ĐƯỢC BỎ SÓT BẤT KỲ ĐƠN HÀNG/KHÁCH HÀNG NÀO CÓ TRONG ẢNH. Thà đọc thừa những dòng có vẻ giống đơn hàng còn hơn bỏ sót.\n2. Cột Tên: Trích xuất chính xác.\n3. Cột Địa chỉ: Ghi chính xác (để trống nếu không có).\n4. Cột Số tiền: Ép buộc trả về MỘT SỐ NGUYÊN (Ví dụ: 150000). Loại bỏ dấu phẩy hoặc chữ "đ". Nếu thấy ghi tắt như "150k", tự động đổi thành 150000.\n5. Cột Người bán/Nhân viên: Trích xuất chính xác tên.\nCHỈ TRẢ VỀ ĐỊNH DẠNG JSON SAU ĐÂY, KHÔNG ĐƯỢC CÓ TEXT NÀO KHÁC BÊN NGOÀI:\n{"deliveries": [{"name": "Tên khách", "address": "Địa chỉ", "amount": 150000, "salesperson": "Tên NV"}]}` : `BẠN LÀ CHUYÊN GIA TRÍCH XUẤT DỮ LIỆU TỪ ẢNH HÓA ĐƠN VÀ PHẦN MỀM MISA. \nYÊU CẦU BẮT BUỘC:\n1. ĐỌC TỪNG DÒNG MỘT TỪ TRÊN XUỐNG DƯỚI. TUYỆT ĐỐI KHÔNG BỎ SÓT BẤT KỲ ĐƠN HÀNG HOẶC KHÁCH HÀNG NÀO CÓ TRONG ẢNH. Thà đọc thừa còn hơn bỏ sót.\n2. Tên khách hàng: Trích xuất chính xác.\n3. Địa chỉ: Lấy nếu có, nếu không để trống.\n4. Số tiền: Phải là 1 số nguyên (VD: 150000). Bỏ dấu phẩy và chữ đ.\n5. Ngày tháng: Tìm định dạng ngày tháng tạo đơn (VD: 03/06/2026). Nếu không thấy thì bỏ qua.\nCHỈ TRẢ VỀ JSON NGUYÊN BẢN, KHÔNG GIẢI THÍCH, KHÔNG CÓ KÝ TỰ BÊN NGOÀI: \n{"orders": [{"name": "Tên khách", "address": "Địa chỉ khách", "amount": 12345, "date": "03/06/2026"}]}`; let retries = 3, delayTime = 3000; while (retries > 0) { try { const res = await fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ contents: [{parts:[{text:prompt}, {inlineData:{mimeType:mime, data:b64}}]}], generationConfig: {responseMimeType:"application/json"} }) }); if(res.ok) { const data = await res.json(); return JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()); } else { const err = await res.json(); if (res.status === 404) { cachedModelName = null; return null; } if (res.status === 503 || res.status === 429) { retries--; if (retries === 0) return null; await new Promise(r => setTimeout(r, delayTime)); delayTime *= 2; continue; } else { return null; } } } catch (e) { return null; } } return null; }
+
+        // Render UI
+        function formatShortMoney(amt) { const isNegative = amt < 0; const absAmt = Math.abs(amt); let formattedStr = ""; if (absAmt >= 1000000) { const millions = absAmt / 1000000; formattedStr = millions.toFixed(1).replace('.0', '') + 'tr'; } else if (absAmt >= 1000) { formattedStr = (absAmt / 1000).toFixed(0) + 'k'; } else { formattedStr = absAmt.toString(); } return isNegative ? `-${formattedStr}` : formattedStr; }
+        function updateProgressBarPositions() { const trackEl = document.getElementById('progressBarTrack'); if (!trackEl) return; const trackW = trackEl.offsetWidth; const updateBoxPos = (perc, boxId) => { const boxEl = document.getElementById(boxId); if (!boxEl) return; boxEl.style.opacity = "1"; const boxW = boxEl.offsetWidth; let targetLeft = (trackW * perc / 100) - (boxW / 2); if (targetLeft < 0) targetLeft = 0; if (targetLeft + boxW > trackW) targetLeft = trackW - boxW; boxEl.style.left = `${targetLeft}px`; }; updateBoxPos(lastSafeCurrentPerc, 'currentLabelBox'); updateBoxPos(lastSafeExpectedPerc, 'expectedLabelBox'); }
+
+        function renderOrders() {
+            orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (datePickerInstance) datePickerInstance.redraw();
+
+            // CỐT LÕI: Lấy danh sách hiển thị dựa trên THÁNG KẾ TOÁN
+            const currentMonthOrders = getOrdersForCurrentSelection();
+            const currentMonthTarget = getTargetForMonthYear(currentSelectedMonth, currentSelectedYear);
+            let currentMonthTotal = 0; currentMonthOrders.forEach(o => currentMonthTotal += o.amount);
+
+            // Tính toán tiến độ thời gian
+            const totalDaysInMonth = new Date(currentSelectedYear, currentSelectedMonth, 0).getDate();
+            const now = new Date(); let limitDay = totalDaysInMonth;
+            if (currentSelectedMonth === (now.getMonth() + 1) && currentSelectedYear === now.getFullYear()) { limitDay = now.getDate(); } else if (currentSelectedYear < now.getFullYear() || (currentSelectedYear === now.getFullYear() && currentSelectedMonth < (now.getMonth() + 1))) { limitDay = totalDaysInMonth; } else { limitDay = 0; }
+            let workingDaysTotal = 0, workingDaysPassed = 0;
+            for (let i = 1; i <= totalDaysInMonth; i++) { const d = new Date(currentSelectedYear, currentSelectedMonth - 1, i); const isHoliday = SOLAR_HOLIDAYS.includes(`${i}/${currentSelectedMonth}`); if (d.getDay() !== 0 && !isHoliday) { workingDaysTotal++; if (i <= limitDay) workingDaysPassed++; } }
+            
+            const dailyTarget = workingDaysTotal > 0 ? (currentMonthTarget / workingDaysTotal) : 0;
+            const expectedRevenue = workingDaysTotal > 0 ? dailyTarget * workingDaysPassed : 0;
+            
+            let currentPercentage = currentMonthTarget > 0 ? (currentMonthTotal / currentMonthTarget) * 100 : 0;
+            let expectedPercentage = currentMonthTarget > 0 ? (expectedRevenue / currentMonthTarget) * 100 : 0;
+            lastSafeCurrentPerc = currentPercentage > 100 ? 100 : currentPercentage; lastSafeExpectedPerc = expectedPercentage > 100 ? 100 : expectedPercentage;
+            
+            document.getElementById('targetAmountDisplay').innerText = formatMoney(currentMonthTarget).replace('đ', '');
+            document.getElementById('progressPercentage').innerText = `${currentPercentage.toFixed(1)}%`;
+            document.getElementById('currentBarFill').style.width = `${lastSafeCurrentPerc}%`; document.getElementById('expectedBarFill').style.width = `${lastSafeExpectedPerc}%`;
+            document.getElementById('expectedLabelFloat').innerText = formatShortMoney(expectedRevenue); document.getElementById('currentLabelFloat').innerText = `Đạt: ${formatShortMoney(currentMonthTotal)}`;
+            
+            const runRateStatus = document.getElementById('runRateStatus'), progressPercentageEl = document.getElementById('progressPercentage');
+            if (currentMonthTotal >= expectedRevenue && expectedRevenue > 0) {
+                progressPercentageEl.className = "text-[22px] font-black text-emerald-600 leading-none tracking-tighter"; document.getElementById('currentBarFill').className = "absolute top-0 left-0 bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[2px_0_4px_rgba(0,0,0,0.15)] h-full rounded-full transition-all duration-1000 ease-out z-20"; document.getElementById('currentLabelFloat').className = "text-[13px] font-black text-white bg-emerald-600 px-2.5 py-0.5 rounded-md shadow-sm tracking-tight"; document.getElementById('currentLineFloat').className = "absolute top-full w-[2px] h-5 bg-emerald-500 mt-0.5";
+                runRateStatus.innerHTML = `<i class="fa-solid fa-arrow-up text-[10px]"></i>+${formatShortMoney(currentMonthTotal - expectedRevenue)}`; runRateStatus.className = "font-extrabold px-2 py-0.5 rounded-md text-[13px] bg-emerald-100 text-emerald-700 flex items-center gap-0.5 shrink-0 border border-emerald-200";
+            } else if (expectedRevenue > 0) {
+                progressPercentageEl.className = "text-[22px] font-black text-red-600 leading-none tracking-tighter"; document.getElementById('currentBarFill').className = "absolute top-0 left-0 bg-gradient-to-r from-red-400 to-red-600 shadow-[2px_0_4px_rgba(0,0,0,0.15)] h-full rounded-full transition-all duration-1000 ease-out z-20"; document.getElementById('currentLabelFloat').className = "text-[13px] font-black text-white bg-red-600 px-2.5 py-0.5 rounded-md shadow-sm tracking-tight"; document.getElementById('currentLineFloat').className = "absolute top-full w-[2px] h-5 bg-red-500 mt-0.5";
+                runRateStatus.innerHTML = `<i class="fa-solid fa-arrow-down text-[10px]"></i>-${formatShortMoney(expectedRevenue - currentMonthTotal)}`; runRateStatus.className = "font-extrabold px-2 py-0.5 rounded-md text-[13px] bg-red-100 text-red-600 flex items-center gap-0.5 shrink-0 border border-red-200";
+            } else { progressPercentageEl.className = "text-[22px] font-black text-slate-400 leading-none tracking-tighter"; }
+
+            requestAnimationFrame(() => requestAnimationFrame(() => updateProgressBarPositions()));
+
+            const timeProgressPercent = workingDaysTotal > 0 ? (workingDaysPassed / workingDaysTotal) * 100 : 0;
+            const progressDiffBadge = document.getElementById('progressDiffBadge');
+            if (currentMonthTarget > 0 && workingDaysTotal > 0) {
+                progressDiffBadge.classList.remove('hidden'); const percentDiff = currentPercentage - timeProgressPercent;
+                if (percentDiff >= 0) { progressDiffBadge.innerText = `Lệch: +${percentDiff.toFixed(1)}%`; progressDiffBadge.className = "text-[10px] mt-1 font-bold px-1.5 py-0.5 rounded-md shadow-sm bg-emerald-50 text-emerald-600 border border-emerald-100"; } else { progressDiffBadge.innerText = `Lệch: ${percentDiff.toFixed(1)}%`; progressDiffBadge.className = "text-[10px] mt-1 font-bold px-1.5 py-0.5 rounded-md shadow-sm bg-red-50 text-red-500 border border-red-100"; }
+            } else progressDiffBadge.classList.add('hidden');
+            
+            document.getElementById('targetMonthLabel').innerText = `MỤC TIÊU THÁNG ${currentSelectedMonth}/${currentSelectedYear}`;
+            document.getElementById('timeDaysPassedDisplay').innerText = `${workingDaysPassed}/${workingDaysTotal} ngày`;
+            document.getElementById('timeProgressPercentage').innerText = `${timeProgressPercent.toFixed(1)}%`; document.getElementById('timeProgressBarFill').style.width = `${timeProgressPercent > 100 ? 100 : timeProgressPercent}%`;
+            document.getElementById('timeDaysRemainingFooter').innerText = `${workingDaysTotal - workingDaysPassed > 0 ? workingDaysTotal - workingDaysPassed : 0} ngày`;
+
+            let dateFilteredOrders = []; 
+            if (filterDateValue) {
+                btnClearDate.classList.remove('hidden'); document.getElementById('addFormHeader').classList.add('hidden'); document.getElementById('addFormContent').classList.add('hidden'); document.getElementById('searchBoxContainer').classList.add('hidden'); document.getElementById('addFormChevron').classList.remove('rotate-180');
+                const rangeSeparator = filterDateValue.includes(' - ') ? ' - ' : (filterDateValue.includes(' đến ') ? ' đến ' : null);
+                if (rangeSeparator) {
+                    const [startStr, endStr] = filterDateValue.split(rangeSeparator);
+                    const startTime = new Date(startStr + 'T00:00:00').getTime(), endTime = new Date(endStr + 'T23:59:59').getTime();
+                    // Lưu ý: Lọc theo ngày thì dùng physical date (createdAt)
+                    dateFilteredOrders = currentMonthOrders.filter(o => {
+                        if (filterTypeValue === 'createdAt') { const t = o.createdAt || Date.now(); return t >= startTime && t <= endTime; } else { if (!o.completed || !o.completedDate) return false; return o.completedDate >= startStr && o.completedDate <= endStr; }
+                    });
+                } else {
+                    dateFilteredOrders = currentMonthOrders.filter(o => {
+                        if (filterTypeValue === 'createdAt') { const d = new Date(o.createdAt || Date.now()); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === filterDateValue; } else { return o.completed && o.completedDate === filterDateValue; }
+                    });
+                }
+            } else {
+                btnClearDate.classList.add('hidden'); document.getElementById('addFormHeader').classList.remove('hidden'); document.getElementById('searchBoxContainer').classList.remove('hidden');
+                dateFilteredOrders = currentMonthOrders;
+            }
+
+            if (filterTypeValue === 'completedDate') dateFilteredOrders = dateFilteredOrders.filter(o => o.completed);
+
+            const searchTerm = searchInput.value.trim(); const normalizedSearchTerm = normalizeStr(searchTerm);
+            if (normalizedSearchTerm) { dateFilteredOrders = dateFilteredOrders.filter(o => { return normalizeStr(o.name).includes(normalizedSearchTerm) || normalizeStr(o.address || '').includes(normalizedSearchTerm) || o.amount.toString().includes(searchTerm); }); }
+
+            let totalChecked = 0, totalPending = 0, completedCount = 0, pendingCount = 0;
+            dateFilteredOrders.forEach(o => { if (o.completed) { totalChecked += o.amount; completedCount++; } else { totalPending += o.amount; pendingCount++; } });
+
+            document.getElementById('countTabAll').innerText = dateFilteredOrders.length; document.getElementById('countTabPending').innerText = pendingCount; document.getElementById('countTabCompleted').innerText = completedCount;
+
+            let displayOrders = dateFilteredOrders;
+            if (currentFilter === 'pending') displayOrders = dateFilteredOrders.filter(o => !o.completed); else if (currentFilter === 'completed') displayOrders = dateFilteredOrders.filter(o => o.completed);
+
+            const sortValue = document.getElementById('sortSelect').value;
+            displayOrders.sort((a, b) => {
+                if (sortValue.startsWith('created')) { const valA = a.createdAt || 0, valB = b.createdAt || 0; return sortValue.endsWith('desc') ? valB - valA : valA - valB; } 
+                else if (sortValue.startsWith('completed')) { const valA = a.completedDate || '', valB = b.completedDate || ''; if (!valA && !valB) return (b.createdAt || 0) - (a.createdAt || 0); if (!valA) return 1; if (!valB) return -1; if (sortValue.endsWith('desc')) return valA < valB ? 1 : (valA > valB ? -1 : 0); else return valA > valB ? 1 : (valA < valB ? -1 : 0); }
+                return 0;
+            });
+
+            currentDisplayOrders = [...displayOrders];
+
+            document.getElementById('totalRevenue').innerText = formatMoney(totalChecked + totalPending);
+            document.getElementById('statTotalOrdersCount').innerText = dateFilteredOrders.length;
+            document.getElementById('statPendingAmount').innerText = formatMoney(totalPending); document.getElementById('statPendingLabel').innerText = `Chưa giao (${pendingCount} đơn)`;
+            document.getElementById('statTotalAmount').innerText = formatMoney(totalChecked); document.getElementById('statTotalLabel').innerText = `Đã giao (${completedCount} đơn)`;
+            
+            const dashboardTitle = document.getElementById('dashboardTitle');
+            if (dashboardTitle) {
+                if (filterDateValue) {
+                    // Logic format tiêu đề (giữ nguyên)
+                    dashboardTitle.innerHTML = `<i class="fa-solid fa-filter text-blue-600"></i> KẾT QUẢ LỌC THEO NGÀY`;
+                    dashboardTitle.className = 'text-[11px] font-black uppercase tracking-wider text-blue-800 z-10 text-center mb-1 flex items-center gap-1.5 justify-center w-full'; dashboardTitle.parentElement.className = "bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 shadow-md border-2 border-blue-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300"; document.getElementById('totalRevenue').className = "text-[34px] font-black text-indigo-700 z-10 tracking-tight drop-shadow-sm text-center";
+                } else if (searchTerm) {
+                    dashboardTitle.innerHTML = `<i class="fa-solid fa-magnifying-glass text-indigo-600"></i> KẾT QUẢ TÌM KIẾM T${currentSelectedMonth}`;
+                    dashboardTitle.className = 'text-[11px] font-black uppercase tracking-wider text-indigo-800 z-10 text-center mb-1 flex items-center gap-1.5 justify-center w-full'; dashboardTitle.parentElement.className = "bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 shadow-md border-2 border-indigo-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300"; document.getElementById('totalRevenue').className = "text-[34px] font-black text-indigo-700 z-10 tracking-tight drop-shadow-sm text-center";
+                } else {
+                    dashboardTitle.innerHTML = `<i class="fa-solid fa-sack-dollar text-emerald-600"></i> DOANH SỐ KỲ T${currentSelectedMonth}/${currentSelectedYear}`;
+                    dashboardTitle.className = 'text-[11px] font-black uppercase tracking-wider text-emerald-800 z-10 text-center mb-1 flex items-center gap-1.5 justify-center w-full'; dashboardTitle.parentElement.className = "bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 shadow-md border-2 border-emerald-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300"; document.getElementById('totalRevenue').className = "text-[34px] font-black text-emerald-700 z-10 tracking-tight drop-shadow-sm text-center";
+                }
+            }
+
+            if (displayOrders.length === 0) { emptyState.classList.remove('hidden'); orderList.innerHTML = ""; } else {
+                emptyState.classList.add('hidden');
+                orderList.innerHTML = displayOrders.map(order => {
+                    const physicalDate = new Date(order.createdAt || Date.now());
+                    const pMonth = physicalDate.getMonth() + 1;
+                    
+                    // CẢNH BÁO NHẸ TRÊN UI: Nếu ngày thực tế khác với tháng đang xem
+                    let crossMonthBadge = '';
+                    if (pMonth !== currentSelectedMonth) {
+                        crossMonthBadge = `<span class="bg-indigo-100 text-indigo-700 text-[8px] font-bold px-1.5 py-0.5 rounded ml-1 border border-indigo-200">Đơn T${pMonth}</span>`;
+                    }
+
+                    return `
+                    <li class="fade-enter flex items-center justify-between py-2.5 px-3.5 border-b border-slate-50 transition-colors ${order.completed ? 'bg-green-50/70' : 'bg-white'}">
+                        <div onclick="window.toggleOrder('${order.id}')" class="flex items-center space-x-3 flex-1 cursor-pointer select-none">
+                            <div class="w-5 h-5 flex-shrink-0 rounded-[4px] border-2 flex items-center justify-center transition-all ${order.completed ? 'bg-green-500 border-green-500 text-white shadow-sm' : 'border-slate-300 bg-white'}">${order.completed ? '<i class="fa-solid fa-check text-[10px] font-bold"></i>' : ''}</div>
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm tracking-tight flex items-center ${order.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${order.name} ${crossMonthBadge}</span>
+                                ${order.address ? `<span class="text-[10px] text-slate-500 leading-tight mt-0.5"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>${order.address}</span>` : ''}
+                                <div class="flex flex-col mt-0.5 gap-0.5"><span class="text-[9px] text-slate-400"><i class="fa-regular fa-calendar-days mr-1"></i>Tạo: ${getOnlyDateStr(order.createdAt)}</span>${order.completed && order.completedDate ? `<span class="text-[9px] text-emerald-600 font-semibold"><i class="fa-solid fa-check-double mr-0.5"></i>Giao: ${formatDateVN(order.completedDate)}</span>` : ''}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1.5"><span class="font-black text-sm mr-1 ${order.completed ? 'text-green-600' : 'text-blue-600'}">${formatMoney(order.amount)}</span><button onclick="window.openEditModal('${order.id}')" class="w-7 h-7 rounded-md text-blue-500 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"><i class="fa-solid fa-pen text-[10px]"></i></button><button onclick="window.requestDeleteOrder('${order.id}', '${order.name}', ${order.amount})" class="w-7 h-7 rounded-md text-red-500 bg-red-50 hover:bg-red-100 flex items-center justify-center transition"><i class="fa-solid fa-trash text-[10px]"></i></button></div>
+                    </li>`;
+                }).join('');
+            }
+        }
+
+        // --- CÁC HÀM UI CÒN LẠI (GIỮ NGUYÊN) ---
+        window.toggleOrder = async (id) => {
+            const order = orders.find(o => o.id === id); if (!order) return;
+            if (order.completed) {
+                document.getElementById('uncheckModalInfo').innerHTML = `<div class="font-black text-slate-800 text-sm mb-1">${order.name}</div><div class="font-black text-amber-600 text-base">${formatMoney(order.amount)}</div>`;
+                document.getElementById('confirmUncheckModal').classList.remove('hidden');
+                document.getElementById('btnConfirmUncheck').onclick = () => { order.completed = false; order.completedDate = null; saveData(); renderOrders(); const col = getOrdersCol(); if(col) col.doc(id).update({ completed: false, completedDate: null }); document.getElementById('confirmUncheckModal').classList.add('hidden'); showToast(`Đã hủy giao: ${order.name}`); };
+            } else {
+                order.completed = true; const d = new Date(); order.completedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                saveData(); renderOrders(); const col = getOrdersCol(); if(col) col.doc(id).update({ completed: true, completedDate: order.completedDate }); showToast(`Đã giao: ${order.name}`);
+            }
+        }
+        window.requestDeleteOrder = (id, name, amount) => {
+            document.getElementById('deleteItemInfo').innerHTML = `<span class="text-blue-600 font-bold">${name}</span><br><span class="text-red-600 font-bold">${formatMoney(amount)}</span>`;
+            document.getElementById('deleteItemModal').classList.remove('hidden');
+            document.getElementById('btnConfirmDeleteItem').onclick = () => { orders = orders.filter(o => o.id !== id); saveData(); renderOrders(); const col = getOrdersCol(); if(col) col.doc(id).delete(); document.getElementById('deleteItemModal').classList.add('hidden'); showToast("Đã xóa đơn hàng!"); };
+        }
+        
+        // Export / Import / Tabs
+        const tabSingle = document.getElementById('tabSingle'), tabBulk = document.getElementById('tabBulk'), tabReconcile = document.getElementById('tabReconcile'), panelSingle = document.getElementById('panelSingle'), panelBulk = document.getElementById('panelBulk'), panelReconcile = document.getElementById('panelReconcile');
+        function setTabActive(aT) { [tabSingle, tabBulk, tabReconcile].forEach(t => t.className = t === aT ? "flex-1 py-3.5 text-center font-bold text-blue-600 border-b-2 border-blue-600 transition" : "flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-slate-700 transition"); }
+        tabSingle.addEventListener('click', () => { setTabActive(tabSingle); panelSingle.classList.remove('hidden'); panelBulk.classList.add('hidden'); panelReconcile.classList.add('hidden'); }); tabBulk.addEventListener('click', () => { setTabActive(tabBulk); panelBulk.classList.remove('hidden'); panelSingle.classList.add('hidden'); panelReconcile.classList.add('hidden'); }); tabReconcile.addEventListener('click', () => { setTabActive(tabReconcile); panelReconcile.classList.remove('hidden'); panelSingle.classList.add('hidden'); panelBulk.classList.add('hidden'); });
+        document.getElementById('btnToggleAddForm').addEventListener('click', () => { document.getElementById('addFormContent').classList.toggle('hidden'); document.getElementById('addFormChevron').classList.toggle('rotate-180'); });
+        
+        document.getElementById('btnExport').addEventListener('click', () => { document.getElementById('settingsModal').classList.add('hidden'); if (orders.length === 0) return showToast("Sổ đang trống!", true); try { const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({orders: orders, targets: monthlyTargetsMap})))); const t = document.createElement('textarea'); t.value = "SDP_V9_" + b64; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); showToast("Đã sao chép mã dự phòng!"); } catch(e) { showToast("Lỗi", true); } });
+        document.getElementById('btnImport').addEventListener('click', () => { document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('importText').value = ""; document.getElementById('importModal').classList.remove('hidden'); });
+        document.getElementById('btnConfirmImport').addEventListener('click', () => { let val = document.getElementById('importText').value.trim(); if (!val) return; if (val.startsWith("SDP_V9_")) val = val.substring(7); try { const parsed = JSON.parse(decodeURIComponent(escape(atob(val)))); if (parsed.orders) { orders = parsed.orders; monthlyTargetsMap = parsed.targets || {}; storage.set('monthly_targets_v9', JSON.stringify(monthlyTargetsMap)); } else orders = parsed; saveData(); renderOrders(); document.getElementById('importModal').classList.add('hidden'); showToast("Khôi phục thành công!"); } catch(e) { showToast("Mã lỗi", true); } });
+
+        // Nút Cài đặt
+        document.getElementById('btnSettings').addEventListener('click', () => { document.getElementById('inputApiKey').value = storage.get('gemini_api_key') || ""; document.getElementById('settingsModal').classList.remove('hidden'); });
+        document.getElementById('btnSaveSettings').addEventListener('click', () => { storage.set('gemini_api_key', document.getElementById('inputApiKey').value.trim()); cachedModelName = null; showToast("Đã lưu API!"); document.getElementById('settingsModal').classList.add('hidden'); });
+        document.querySelectorAll('[id^="btnCancel"], #btnCloseSettings').forEach(btn => btn.addEventListener('click', (e) => e.target.closest('.fixed').classList.add('hidden')));
+        document.getElementById('btnReset').addEventListener('click', () => document.getElementById('confirmModal').classList.remove('hidden'));
+        document.getElementById('btnConfirmDelete').addEventListener('click', () => { orders = []; monthlyTargetsMap = {}; saveData(); storage.remove('monthly_targets_v9'); renderOrders(); document.getElementById('confirmModal').classList.add('hidden'); document.getElementById('settingsModal').classList.add('hidden'); showToast("Đã xóa sổ!"); });
+
+        // Reconcile Events (Dò Excel)
+        document.getElementById('btnReconcileUploadTrigger').addEventListener('click', () => { const val = document.getElementById('reconcileDateInput').value; document.getElementById('displayConfirmReconcileDate').innerText = val ? val.split('-').reverse().join('/') : "Chưa chọn ngày!"; document.getElementById('confirmReconcileDateModal').classList.remove('hidden'); });
+        document.getElementById('btnProceedConfirmDate').addEventListener('click', () => { document.getElementById('confirmReconcileDateModal').classList.add('hidden'); document.getElementById('reconcileInputFile').click(); });
+        document.getElementById('reconcileInputFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            document.getElementById('btnReconcileUploadTrigger').classList.add('hidden'); document.getElementById('reconcileScanningIndicator').classList.remove('hidden');
+            try { const b64 = await fileToBase64(file); const res = await callGemini(b64.split(',')[1], file.type, "excel"); if (res && res.deliveries) processExcel(res.deliveries); else if (res !== null) showToast("AI không trả về được dữ liệu", true); } catch(err) { showToast("Lỗi", true); } finally { document.getElementById('btnReconcileUploadTrigger').classList.remove('hidden'); document.getElementById('reconcileScanningIndicator').classList.add('hidden'); e.target.value = ''; }
+        });
+        let pendingReconciledMatches = [];
+        function processExcel(deliveries) {
+            pendingReconciledMatches = []; const currentMonthOrders = getOrdersForCurrentSelection(); const usedExcelRowIndices = new Set();
+            currentMonthOrders.forEach(order => { if (order.completed) return; const normOrderName = normalizeStr(order.name), normOrderAddress = normalizeStr(order.address || ""), orderAmt = Math.round(order.amount); deliveries.forEach((row, rowIndex) => { if (usedExcelRowIndices.has(rowIndex)) return; const exName = row.name || "", exAddr = row.address || "", exSale = row.salesperson || ""; let isMySale = true; if (exSale) { const normSale = normalizeStr(exSale); isMySale = normSale.includes("luong") || normSale.includes("luwong") || normSale.includes("lương"); } if (!isMySale) return; let exAmt = parseFloat(row.amount) || 0; if(exAmt > 0 && exAmt < 100000) exAmt *= 1000; exAmt = Math.round(exAmt); const nExName = normalizeStr(exName), nExAddr = normalizeStr(exAddr); const matchN = nExName && (nExName.includes(normOrderName) || normOrderName.includes(nExName)); const matchA = (nExAddr && normOrderAddress) && (nExAddr.includes(normOrderAddress) || normOrderAddress.includes(nExAddr)); if(matchN || matchA) { let type = (matchN && matchA) ? "Khớp Tên & Địa chỉ" : (matchN ? "Khớp Tên" : "Khớp Địa chỉ"); let exactAmountMatch = (orderAmt === exAmt); if (!exactAmountMatch) type = type + " (Lệch tiền)"; const existingMatch = pendingReconciledMatches.find(m => m.orderId === order.id); if (!existingMatch || (!existingMatch.exactAmountMatch && exactAmountMatch)) { if (existingMatch) { pendingReconciledMatches = pendingReconciledMatches.filter(m => m.orderId !== order.id); if(existingMatch.excelRowIndex !== undefined) usedExcelRowIndices.delete(existingMatch.excelRowIndex); } pendingReconciledMatches.push({ orderId: order.id, orderName: order.name, orderAmount: order.amount, excelName: exName, excelAddress: exAddr, excelAmount: exAmt, excelSale: exSale, matchType: type, exactAmountMatch: exactAmountMatch, excelRowIndex: rowIndex }); usedExcelRowIndices.add(rowIndex); } } }); });
+            if(pendingReconciledMatches.length > 0) {
+                document.getElementById('reconcileTotalMatchedCount').innerText = `${pendingReconciledMatches.length} đơn`; document.getElementById('reconcileAutoTickCount').innerText = `${pendingReconciledMatches.filter(m => m.exactAmountMatch).length} đơn`; document.getElementById('reconcileMismatchCount').innerText = `${pendingReconciledMatches.filter(m => !m.exactAmountMatch).length} đơn`;
+                document.getElementById('reconcilePreviewList').innerHTML = pendingReconciledMatches.map(m => `<li class="p-3 border ${!m.exactAmountMatch ? 'border-red-300 bg-white' : 'border-slate-200 bg-white'} rounded-lg"><div class="flex justify-between items-start"><span class="font-bold text-sm">${m.orderName}</span><span class="font-bold ${!m.exactAmountMatch ? 'text-red-500' : 'text-blue-600'} text-sm">${formatMoney(m.orderAmount)}</span></div><div class="text-[10px] text-slate-500 mt-1">Excel: ${m.excelName}</div>${!m.exactAmountMatch ? `<div class="mt-2 bg-red-50 p-2.5 rounded-lg border border-red-200"><div class="text-[11px] text-red-600 font-bold mb-2">Lệch tiền! Chọn số đúng:</div><div class="flex flex-col gap-2 pl-1"><label class="flex items-center gap-2 text-[11px] cursor-pointer"><input type="radio" name="amt_choice_${m.orderId}" value="keep" checked class="reconcile-radio w-4 h-4 accent-blue-600"><span>Giữ nguyên sổ: <strong class="text-blue-700">${formatMoney(m.orderAmount)}</strong></span></label><label class="flex items-center gap-2 text-[11px] cursor-pointer"><input type="radio" name="amt_choice_${m.orderId}" value="excel" data-excel-amt="${m.excelAmount}" class="reconcile-radio w-4 h-4 accent-red-600"><span>Đổi theo Excel: <strong class="text-red-600">${formatMoney(m.excelAmount)}</strong></span></label></div></div>` : ''}<div class="flex justify-between items-center mt-2 pt-2 border-t"><span class="text-[9px] font-bold ${m.exactAmountMatch ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} px-2 py-1 rounded-full">${m.matchType}</span><input type="checkbox" data-id="${m.orderId}" data-order-amt="${m.orderAmount}" ${m.exactAmountMatch ? 'checked' : ''} class="recon-cb w-5 h-5 accent-emerald-600 rounded"></div></li>`).join('');
+                document.querySelectorAll('.recon-cb, .reconcile-radio').forEach(el => el.addEventListener('change', () => { let t=0; document.querySelectorAll('#reconcilePreviewList li').forEach(li => { const cb = li.querySelector('.recon-cb'); if (cb && cb.checked) { const ro = li.querySelector(`input[name="amt_choice_${cb.getAttribute('data-id')}"][value="excel"]`); if (ro && ro.checked) t += parseFloat(ro.getAttribute('data-excel-amt'))||0; else t += parseFloat(cb.getAttribute('data-order-amt'))||0; } }); document.getElementById('reconcileTotalMoney').innerText = formatMoney(t); }));
+                document.querySelector('.recon-cb').dispatchEvent(new Event('change')); // Trigger tính tổng
+                document.getElementById('reconcilePreviewModal').classList.remove('hidden');
+            } else showToast("Không có đơn nào khớp!", true);
+        }
+        document.getElementById('btnConfirmReconcile').addEventListener('click', () => { const ids = Array.from(document.querySelectorAll('.recon-cb:checked')).map(cb => cb.getAttribute('data-id')), sDate = document.getElementById('reconcileDateInput').value; if(ids.length > 0) { orders = orders.map(o => { if (ids.includes(o.id)) { let fAmt = o.amount; const ro = document.querySelector(`input[name="amt_choice_${o.id}"][value="excel"]`); if (ro && ro.checked) fAmt = parseFloat(ro.getAttribute('data-excel-amt')) || fAmt; return { ...o, completed: true, amount: fAmt, completedDate: sDate }; } return o; }); saveData(); renderOrders(); showToast(`Đã xử lý ${ids.length} đơn!`); } document.getElementById('reconcilePreviewModal').classList.add('hidden'); });
+
+        // Logic xuất Excel (Giữ nguyên)
+        document.getElementById('btnOpenExportModal').addEventListener('click', () => { if (!currentDisplayOrders || currentDisplayOrders.length === 0) return showToast("Sổ trống!", true); document.getElementById('exportSortOptionsContainer').innerHTML = [{value: 'created_desc', label: 'Ngày tạo (Mới nhất)'},{value: 'created_asc', label: 'Ngày tạo (Cũ nhất)'},{value: 'completed_desc', label: 'Ngày giao (Mới nhất)'},{value: 'completed_asc', label: 'Ngày giao (Cũ nhất)'}].map(opt => `<div class="export-sort-item cursor-pointer flex items-center justify-between p-3 rounded-lg border ${opt.value === document.getElementById('sortSelect').value ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}" data-value="${opt.value}"><span class="font-bold text-[12px]">${opt.label}</span></div>`).join(''); document.querySelectorAll('.export-sort-item').forEach(i => i.addEventListener('click', function() { document.getElementById('sortSelect').value = this.getAttribute('data-value'); renderOrders(); document.getElementById('btnOpenExportModal').click(); })); document.getElementById('exportExcelModal').classList.remove('hidden'); });
+        document.getElementById('btnConfirmExportExcel').addEventListener('click', () => { document.getElementById('exportExcelModal').classList.add('hidden'); try { showToast("Đang tạo Excel..."); let wb = XLSX.utils.book_new(), exD = [["BÁO CÁO DANH SÁCH ĐƠN HÀNG", "", "", "", "", "", ""],[`Tháng ${currentSelectedMonth}/${currentSelectedYear}`, "", "", "", "", "", ""],["", "", "", "", "", "", ""],["STT", "Tên khách", "Địa chỉ", "Số tiền", "Ngày tạo", "Ngày giao", "Trạng thái"]]; currentDisplayOrders.forEach((o, i) => exD.push([i+1, o.name, o.address||"", o.amount, getOnlyDateStr(o.createdAt), o.completed&&o.completedDate?formatDateVN(o.completedDate):"", o.completed?"Đã giao":"Chưa giao"])); let ws = XLSX.utils.aoa_to_sheet(exD); XLSX.utils.book_append_sheet(wb, ws, "BaoCao"); XLSX.writeFile(wb, `BaoCao_Thang${currentSelectedMonth}.xlsx`); } catch(e) { showToast("Lỗi xuất Excel", true); } });
+
+        renderOrders();
+    </script>
+</body>
+</html>
